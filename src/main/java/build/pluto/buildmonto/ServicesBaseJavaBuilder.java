@@ -4,8 +4,6 @@ import build.pluto.builder.BuildRequest;
 import build.pluto.builder.Builder;
 import build.pluto.builder.BuilderFactory;
 import build.pluto.builder.BuilderFactoryFactory;
-import build.pluto.buildgit.GitInput;
-import build.pluto.buildgit.GitRemoteSynchronizer;
 import build.pluto.buildjava.JavaBuilder;
 import build.pluto.buildjava.compiler.JavacCompiler;
 import build.pluto.buildjava.JavaInput;
@@ -46,7 +44,7 @@ public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None
 
     @Override
     public File persistentPath(ServicesBaseJavaInput input) {
-        return new File(input.src, "services-base-java.dep");
+        return new File(input.target, "services-base-java.dep");
     }
 
     @Override
@@ -60,38 +58,35 @@ public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None
         MavenInput.Builder mavenInputBuilder = new MavenInput.Builder(
                     new File("lib"),
                     Arrays.asList(MavenDependencies.JEROMQ, MavenDependencies.JSON));
+        MavenInput mavenInput = mavenInputBuilder.build();
 
         //compile services-base-java
-        // ServicesBaseJavaInput sbjInput = null;//new ServicesBaseJavaInput();
-        // this.requireBuild(ServicesBaseJavaBuilder.factory, sbjInput);
-        Out<ArrayList<File>> mavenOutput =
-            this.requireBuild(MavenDependencyFetcher.factory, mavenInputBuilder.build());
+        BuildRequest<?, Out<ArrayList<File>>, ?, ?> mavenRequest = new BuildRequest<>(MavenDependencyFetcher.factory, mavenInput);
+        Out<ArrayList<File>> mavenOutput = this.requireBuild(mavenRequest);
 
         // //compile src
-        List<BuildRequest<?, ?, ?, ?>> requiredUnits = new ArrayList();
-        requiredUnits.add(
-                new BuildRequest(
-                    MavenDependencyFetcher.factory,
-                    mavenInputBuilder.build()));
+        List<BuildRequest<?, ?, ?, ?>> requiredUnits = Arrays.asList(mavenRequest);
 
         FileFilter javaFileFilter = new FileExtensionFilter("java");
 
         List<Path> javaSrcPathList =
             FileCommands.listFilesRecursive(input.src.toPath(), javaFileFilter);
+        List<File> javaSrcList = new ArrayList<>(javaSrcPathList.size());
+        for(Path p : javaSrcPathList) {
+            javaSrcList.add(p.toFile());
+        }
 
         List<File> sourcePath =
             Arrays.asList(new File(input.src, "src"));
-        for (Path p : javaSrcPathList) {
-            JavaInput javaInput = new JavaInput(
-                    p.toFile(),
-                    input.target,
-                    sourcePath,
-                    null,
-                    null,
-                    requiredUnits,
-                    JavacCompiler.instance);
-            requireBuild(JavaBuilder.request(javaInput));
-        }
+        JavaInput javaInput = new JavaInput(
+                javaSrcList,
+                input.target,
+                sourcePath,
+                mavenOutput.val(),
+                Arrays.asList("-source", "1.8"),
+                requiredUnits,
+                JavacCompiler.instance);
+        requireBuild(JavaBuilder.request(javaInput));
         //build jar out of classfiles
         return None.val;
     }
