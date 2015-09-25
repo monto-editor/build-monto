@@ -3,14 +3,19 @@ package build.pluto.buildmonto;
 import build.pluto.builder.BuildRequest;
 import build.pluto.builder.Builder;
 import build.pluto.builder.BuilderFactory;
+import build.pluto.builder.BuilderFactoryFactory;
 import build.pluto.buildmaven.MavenDependencyFetcher;
 import build.pluto.buildmaven.input.MavenInput;
+import build.pluto.buildmonto.util.JavaUtil;
+import build.pluto.buildhttp.HTTPDownloader;
+import build.pluto.buildhttp.HTTPInput;
 import build.pluto.output.None;
 
 import build.pluto.buildgit.GitInput;
 import build.pluto.buildgit.GitRemoteSynchronizer;
 
 import build.pluto.buildjava.JavaBuilder;
+import build.pluto.buildjava.compiler.JavacCompiler;
 import build.pluto.buildjava.JavaInput;
 import build.pluto.output.Out;
 import java.io.File;
@@ -26,75 +31,86 @@ import build.pluto.buildjava.util.FileExtensionFilter;
 public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
 
     public static BuilderFactory<ServicesJavaInput, None, ServicesJavaBuilder> factory
-        = BuilderFactory.of(ServicesJavaBuilder.class, ServicesJavaInput.class);
+        = BuilderFactoryFactory.of(ServicesJavaBuilder.class, ServicesJavaInput.class);
 
     public ServicesJavaBuilder(ServicesJavaInput input) {
         super(input);
     }
 
     @Override
-    protected File persistentPath(ServicesJavaInput input) {
-        return new File(input.srcDir, "services-java.dep");
+    public File persistentPath(ServicesJavaInput input) {
+        return new File(input.targetDir, "services-java.dep");
     }
 
     @Override
     protected String description(ServicesJavaInput input) {
-        return "Build monto:services-base-java";
+        return "Build monto:services-java";
     }
 
     @Override
     protected None build(ServicesJavaInput input) throws Throwable {
         //get services-base-java src from git
-        // GitInput.Builder gitInBuilder = new GitInput.Builder(input.servicesBaseJavaDir, input.servicesBaseJavaGitURL);
-        // this.requireBuild(GitRemoteSynchronizer.factory, gitInBuilder.build());
+        GitInput gitInput = new GitInput.Builder(input.servicesBaseJavaDir, input.servicesBaseJavaGitURL)
+                .build();
+        BuildRequest<?, ?, ?, ?> gitRequest =
+            new BuildRequest<>(GitRemoteSynchronizer.factory, gitInput);
+        this.requireBuild(gitRequest);
 
         //compile services-base-java
-        // ServicesBaseJavaInput sbjInput = null;//new ServicesBaseJavaInput();
-        // this.requireBuild(ServicesBaseJavaBuilder.factory, sbjInput);
+        File sbjJar = new File("services-base-java.jar");
+        ServicesBaseJavaInput baseInput = new ServicesBaseJavaInput(
+                input.servicesBaseJavaDir,
+                new File("targetsb"),
+                sbjJar,
+                Arrays.asList(gitRequest));
 
+        BuildRequest<?, ?, ?, ?> baseRequest =
+            new BuildRequest<>(ServicesBaseJavaBuilder.factory, baseInput);
+        this.requireBuild(baseRequest);
         //resolve maven dependencies
-        MavenInput.Builder mavenInputBuilder = new MavenInput.Builder(
+        MavenInput mavenInput = new MavenInput.Builder(
                     new File("lib"),
                     Arrays.asList(
                         MavenDependencies.JEROMQ,
                         MavenDependencies.JSON,
-                        MavenDependencies.ANTLR,
-                        MavenDependencies.COMMONS_CLI));
+                        MavenDependencies.COMMONS_CLI))
+            .build();
+        BuildRequest<?, Out<ArrayList<File>>, ?, ?> mavenRequest =
+            new BuildRequest<>(MavenDependencyFetcher.factory, mavenInput);
 
-        Out<ArrayList<File>> classPath =
-            this.requireBuild(MavenDependencyFetcher.factory, mavenInputBuilder.build());
+        ArrayList<File> classPath = this.requireBuild(mavenRequest).val();
+
+        //get antlr-4.4-complete
+        HTTPInput httpInput = new HTTPInput(
+                 "http://www.antlr.org/download/antlr-4.4-complete.jar",
+                 new File("lib"),
+                 "antlr-4.4-complete.jar",
+                 0);//never check for new update
+
+        BuildRequest<?, ?, ?, ?> httpRequest =
+            new BuildRequest<>(HTTPDownloader.factory, httpInput);
+        this.requireBuild(httpRequest);
+
+        classPath.add(new File("lib/antlr-4.4-complete.jar"));
+        classPath.add(sbjJar);
+
         //compile src
+        List<BuildRequest<?, ?, ?, ?>> requiredUnits =
+            Arrays.asList(baseRequest, mavenRequest, httpRequest);
 
-        List<BuildRequest<?, ?, ?, ?>> requiredUnits = new ArrayList();
-        requiredUnits.add(new BuildRequest(MavenDependencyFetcher.factory, mavenInputBuilder.build()));
-
-        FileFilter javaFileFilter = new FileExtensionFilter("java");
-
-        List<Path> javaSrcPathList =
-            FileCommands.listFilesRecursive(input.srcDir.toPath(), javaFileFilter);
-
-        List<File> javaSrcFileList = new ArrayList<>();
-        for(Path p : javaSrcPathList) {
-            javaSrcFileList.add(p.toFile());
-        }
-
-        List<File> cP = classPath.val();
-        cP.add(new File("services-java/lib/antlr-4.4-complete.jar"));
-        cP.add(new File("services-java/lib/services-base-java.jar"));
-        List<File> sourcePath = Arrays.asList(input.srcDir);
-        for (File f : javaSrcFileList) {
-            JavaInput javaInput = new JavaInput(
-                    f,
-                    input.targetDir,
-                    sourcePath,
-                    cP,
-                    null,
-                    requiredUnits);
-            ArrayList<JavaInput> javaInputList =
-                new ArrayList<>(Arrays.asList(javaInput));
-            requireBuild(JavaBuilder.factory, javaInputList);
-        }
+        BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
+                input.srcDir,
+                input.targetDir,
+                classPath,
+                requiredUnits);
+        this.requireBuild(javaRequest);
         //build jar
+        BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest };
+        BuildRequest<?, ?, ?, ?> jarRequest = JavaUtil.createJar(
+                input.targetDir,
+                input.jarLocation,
+                requiredUnitsForJar);
+        this.requireBuild(jarRequest);
         return None.val;
     }
 }

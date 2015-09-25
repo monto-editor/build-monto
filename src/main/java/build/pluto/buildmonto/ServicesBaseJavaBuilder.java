@@ -14,6 +14,7 @@ import build.pluto.buildmaven.MavenDependencyFetcher;
 import build.pluto.buildmaven.input.ArtifactConstraint;
 import build.pluto.buildmaven.input.Dependency;
 import build.pluto.buildmaven.input.MavenInput;
+import build.pluto.buildmonto.util.JavaUtil;
 import build.pluto.output.None;
 import build.pluto.output.Out;
 import java.io.File;
@@ -63,29 +64,30 @@ public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None
         Out<ArrayList<File>> mavenOutput = this.requireBuild(mavenRequest);
 
         // //compile src
-        List<BuildRequest<?, ?, ?, ?>> requiredUnits = Arrays.asList(mavenRequest);
-
-        FileFilter javaFileFilter = new FileExtensionFilter("java");
-
-        List<Path> javaSrcPathList =
-            FileCommands.listFilesRecursive(input.src.toPath(), javaFileFilter);
-        List<File> javaSrcList = new ArrayList<>(javaSrcPathList.size());
-        for(Path p : javaSrcPathList) {
-            javaSrcList.add(p.toFile());
+        List<BuildRequest<?, ?, ?, ?>> requiredUnits;
+        if(input.requiredUnits != null) {
+            requiredUnits = new ArrayList<>(input.requiredUnits);
+            requiredUnits.add(mavenRequest);
+        } else {
+            requiredUnits = Arrays.asList(mavenRequest);
         }
 
-        List<File> sourcePath =
-            Arrays.asList(new File(input.src, "src"));
-        JavaInput javaInput = new JavaInput(
-                javaSrcList,
+        BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
+                input.src,
                 input.target,
-                sourcePath,
                 mavenOutput.val(),
-                Arrays.asList("-source", "1.8"),
-                requiredUnits,
-                JavacCompiler.instance);
-        requireBuild(JavaBuilder.request(javaInput));
+                requiredUnits);
+        requireBuild(javaRequest);
+
         //build jar out of classfiles
+
+        BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest };
+        BuildRequest<?, ?, ?, ?> jarRequest = JavaUtil.createJar(
+                input.target,
+                input.jarLocation,
+                requiredUnitsForJar);
+        this.requireBuild(jarRequest);
+
         return None.val;
     }
 }
