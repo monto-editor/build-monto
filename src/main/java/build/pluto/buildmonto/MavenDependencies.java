@@ -20,14 +20,14 @@ public class MavenDependencies {
                     "0.3.4",
                     null,
                     null));
-    // public static final Dependency ANTLR =
-    //     new Dependency(
-    //         new ArtifactConstraint(
-    //                 "com.googlecode.json-simple",
-    //                 "json-simple",
-    //                 "1.1.1",
-    //                 null,
-    //                 null));
+    public static final Dependency ANTLR =
+        new Dependency(
+            new ArtifactConstraint(
+                    "org.antlr",
+                    "antlr4-runtime",
+                    "4.5",
+                    null,
+                    null));
     public static final Dependency COMMONS_CLI =
         new Dependency(
             new ArtifactConstraint(
