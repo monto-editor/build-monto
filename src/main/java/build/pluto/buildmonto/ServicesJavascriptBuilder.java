@@ -4,7 +4,7 @@ import build.pluto.builder.BuildRequest;
 import build.pluto.builder.Builder;
 import build.pluto.builder.BuilderFactory;
 import build.pluto.builder.BuilderFactoryFactory;
-import build.pluto.buildmaven.MavenDependencyFetcher;
+import build.pluto.buildmaven.MavenDependencyResolver;
 import build.pluto.buildmaven.input.MavenInput;
 import build.pluto.buildmonto.util.JavaUtil;
 import build.pluto.buildhttp.HTTPDownloader;
@@ -76,7 +76,7 @@ public class ServicesJavascriptBuilder extends Builder<ServicesJavascriptInput, 
                         MavenDependencies.ANTLR))
             .build();
         BuildRequest<?, Out<ArrayList<File>>, ?, ?> mavenRequest =
-            new BuildRequest<>(MavenDependencyFetcher.factory, mavenInput);
+            new BuildRequest<>(MavenDependencyResolver.factory, mavenInput);
 
         ArrayList<File> classPath = this.requireBuild(mavenRequest).val();
 

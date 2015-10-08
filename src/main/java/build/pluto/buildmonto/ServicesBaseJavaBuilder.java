@@ -10,7 +10,7 @@ import build.pluto.buildjava.JavaJar;
 import build.pluto.buildjava.JavaJar;
 import build.pluto.buildjava.compiler.JavacCompiler;
 import build.pluto.buildjava.util.FileExtensionFilter;
-import build.pluto.buildmaven.MavenDependencyFetcher;
+import build.pluto.buildmaven.MavenDependencyResolver;
 import build.pluto.buildmaven.input.ArtifactConstraint;
 import build.pluto.buildmaven.input.Dependency;
 import build.pluto.buildmaven.input.MavenInput;
@@ -60,7 +60,7 @@ public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None
         MavenInput mavenInput = mavenInputBuilder.build();
 
         //compile services-base-java
-        BuildRequest<?, Out<ArrayList<File>>, ?, ?> mavenRequest = new BuildRequest<>(MavenDependencyFetcher.factory, mavenInput);
+        BuildRequest<?, Out<ArrayList<File>>, ?, ?> mavenRequest = new BuildRequest<>(MavenDependencyResolver.factory, mavenInput);
         Out<ArrayList<File>> mavenOutput = this.requireBuild(mavenRequest);
 
         // //compile src

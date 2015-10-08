@@ -4,19 +4,19 @@ import build.pluto.builder.BuildRequest;
 import build.pluto.builder.Builder;
 import build.pluto.builder.BuilderFactory;
 import build.pluto.builder.BuilderFactoryFactory;
-import build.pluto.buildmaven.MavenDependencyFetcher;
-import build.pluto.buildmaven.input.MavenInput;
-import build.pluto.buildmonto.util.JavaUtil;
-import build.pluto.buildhttp.HTTPDownloader;
-import build.pluto.buildhttp.HTTPInput;
-import build.pluto.output.None;
-
 import build.pluto.buildgit.GitInput;
 import build.pluto.buildgit.GitRemoteSynchronizer;
-
+import build.pluto.buildhttp.HTTPDownloader;
+import build.pluto.buildhttp.HTTPInput;
 import build.pluto.buildjava.JavaBuilder;
-import build.pluto.buildjava.compiler.JavacCompiler;
 import build.pluto.buildjava.JavaInput;
+import build.pluto.buildjava.compiler.JavacCompiler;
+import build.pluto.buildjava.util.FileExtensionFilter;
+import build.pluto.buildmaven.MavenDependencyResolver;
+import build.pluto.buildmaven.input.MavenInput;
+import build.pluto.buildmonto.util.JavaUtil;
+import build.pluto.buildmonto.util.ManifestWriter;
+import build.pluto.output.None;
 import build.pluto.output.Out;
 import java.io.File;
 import java.io.FileFilter;
@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.sugarj.common.FileCommands;
-import build.pluto.buildjava.util.FileExtensionFilter;
 
 
 public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
@@ -76,7 +75,7 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
                         MavenDependencies.COMMONS_CLI))
             .build();
         BuildRequest<?, Out<ArrayList<File>>, ?, ?> mavenRequest =
-            new BuildRequest<>(MavenDependencyFetcher.factory, mavenInput);
+            new BuildRequest<>(MavenDependencyResolver.factory, mavenInput);
 
         ArrayList<File> classPath = this.requireBuild(mavenRequest).val();
 
