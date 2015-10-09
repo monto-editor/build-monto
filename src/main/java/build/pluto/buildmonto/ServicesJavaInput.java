@@ -8,7 +8,8 @@ import java.io.IOException;
 import java.io.Serializable;
 
 public class ServicesJavaInput implements Serializable {
-    public final String servicesBaseJavaGitURL = "https://github.com/monto-editor/services-base-java";
+    public final String servicesBaseJavaGitURL =
+        "https://github.com/monto-editor/services-base-java";
     public final File servicesBaseJavaDir = new File("services-base-java");
     public final File srcDir;
     public final File targetDir;
@@ -23,6 +24,7 @@ public class ServicesJavaInput implements Serializable {
         ServicesJavaInput input = new ServicesJavaInput(
                 new File("services-java"),
                 new File("targetsj"));
-        BuildManagers.build(new BuildRequest<>(ServicesJavaBuilder.factory, input));
+        BuildManagers.build(
+                new BuildRequest<>(ServicesJavaBuilder.factory, input));
     }
 }

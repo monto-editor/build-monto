@@ -39,16 +39,17 @@ public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None
     @Override
     protected None build(ServicesBaseJavaInput input) throws Throwable {
         //resolve maven dependencies
-        MavenInput.Builder mavenInputBuilder = new MavenInput.Builder(
+        MavenInput mavenInput = new MavenInput.Builder(
                     new File("lib"),
-                    Arrays.asList(MavenDependencies.JEROMQ, MavenDependencies.JSON));
-        MavenInput mavenInput = mavenInputBuilder.build();
+                    Arrays.asList(
+                        MavenDependencies.JEROMQ,
+                        MavenDependencies.JSON)).build();
 
-        //compile services-base-java
-        BuildRequest<?, Out<ArrayList<File>>, ?, ?> mavenRequest = new BuildRequest<>(MavenDependencyResolver.factory, mavenInput);
-        Out<ArrayList<File>> mavenOutput = this.requireBuild(mavenRequest);
+        BuildRequest<?, Out<ArrayList<File>>, ?, ?> mavenRequest =
+            new BuildRequest<>(MavenDependencyResolver.factory, mavenInput);
+        ArrayList<File> classpath =  this.requireBuild(mavenRequest).val();
 
-        // //compile src
+        //compile src
         List<BuildRequest<?, ?, ?, ?>> requiredUnits;
         if(input.requiredUnits != null) {
             requiredUnits = new ArrayList<>(input.requiredUnits);
@@ -56,16 +57,14 @@ public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None
         } else {
             requiredUnits = Arrays.asList(mavenRequest);
         }
-
         BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
                 input.src,
                 input.target,
-                mavenOutput.val(),
+                classpath,
                 requiredUnits);
-        requireBuild(javaRequest);
+        this.requireBuild(javaRequest);
 
-        //build jar out of classfiles
-
+        //build jar
         File manifest = new File("sbj-manifest.txt");
         File currentWorkingDir = Paths.get("").toFile();
         ManifestFileGenerator mfGenerator= new ManifestFileGenerator(
@@ -73,7 +72,7 @@ public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None
                 manifest,
                 "1.0",
                 null,
-                mavenOutput.val(),
+                classpath,
                 false);
         mfGenerator.generate();
         BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest };
@@ -83,7 +82,6 @@ public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None
                 manifest,
                 requiredUnitsForJar);
         this.requireBuild(jarRequest);
-
         return None.val;
     }
 }

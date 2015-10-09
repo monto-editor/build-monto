@@ -41,8 +41,9 @@ public class ServicesJavascriptBuilder extends Builder<ServicesJavascriptInput, 
     @Override
     protected None build(ServicesJavascriptInput input) throws Throwable {
         //get services-base-java src from git
-        GitInput gitInput = new GitInput.Builder(input.servicesBaseJavaDir, input.servicesBaseJavaGitURL)
-                .build();
+        GitInput gitInput = new GitInput.Builder(
+                input.servicesBaseJavaDir,
+                input.servicesBaseJavaGitURL).build();
         BuildRequest<?, ?, ?, ?> gitRequest =
             new BuildRequest<>(GitRemoteSynchronizer.factory, gitInput);
         this.requireBuild(gitRequest);
@@ -58,6 +59,7 @@ public class ServicesJavascriptBuilder extends Builder<ServicesJavascriptInput, 
         BuildRequest<?, ?, ?, ?> baseRequest =
             new BuildRequest<>(ServicesBaseJavaBuilder.factory, baseInput);
         this.requireBuild(baseRequest);
+
         //resolve maven dependencies
         MavenInput mavenInput = new MavenInput.Builder(
                     new File("lib"),
@@ -65,25 +67,22 @@ public class ServicesJavascriptBuilder extends Builder<ServicesJavascriptInput, 
                         MavenDependencies.JEROMQ,
                         MavenDependencies.JSON,
                         MavenDependencies.COMMONS_CLI,
-                        MavenDependencies.ANTLR))
-            .build();
+                        MavenDependencies.ANTLR)).build();
         BuildRequest<?, Out<ArrayList<File>>, ?, ?> mavenRequest =
             new BuildRequest<>(MavenDependencyResolver.factory, mavenInput);
-
-        ArrayList<File> classPath = this.requireBuild(mavenRequest).val();
-
-        classPath.add(sbjJar);
+        ArrayList<File> classpath = this.requireBuild(mavenRequest).val();
 
         //compile src
+        classpath.add(sbjJar);
         List<BuildRequest<?, ?, ?, ?>> requiredUnits =
             Arrays.asList(baseRequest, mavenRequest);
-
         BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
                 input.srcDir,
                 input.targetDir,
-                classPath,
+                classpath,
                 requiredUnits);
         this.requireBuild(javaRequest);
+
         //build jar
         File manifest = new File("sjs-manifest.txt");
         this.require(manifest);
@@ -93,7 +92,7 @@ public class ServicesJavascriptBuilder extends Builder<ServicesJavascriptInput, 
                 manifest,
                 "1.0",
                 "monto.service.ecmascript.ECMAScriptServices",
-                classPath,
+                classpath,
                 false);
         mfGenerator.generate();
         BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest };

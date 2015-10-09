@@ -44,35 +44,34 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
     @Override
     protected None build(ServicesJavaInput input) throws Throwable {
         //get services-base-java src from git
-        GitInput gitInput = new GitInput.Builder(input.servicesBaseJavaDir, input.servicesBaseJavaGitURL)
-                .build();
+        GitInput gitInput = new GitInput.Builder(
+                input.servicesBaseJavaDir,
+                input.servicesBaseJavaGitURL).build();
         BuildRequest<?, ?, ?, ?> gitRequest =
             new BuildRequest<>(GitRemoteSynchronizer.factory, gitInput);
         this.requireBuild(gitRequest);
 
-        //compile services-base-java
+        //compile services-base-java and build jar
         File sbjJar = new File("services-base-java.jar");
         ServicesBaseJavaInput baseInput = new ServicesBaseJavaInput(
                 input.servicesBaseJavaDir,
                 new File("targetsb"),
                 sbjJar,
                 Arrays.asList(gitRequest));
-
         BuildRequest<?, ?, ?, ?> baseRequest =
             new BuildRequest<>(ServicesBaseJavaBuilder.factory, baseInput);
         this.requireBuild(baseRequest);
+
         //resolve maven dependencies
         MavenInput mavenInput = new MavenInput.Builder(
                     new File("lib"),
                     Arrays.asList(
                         MavenDependencies.JEROMQ,
                         MavenDependencies.JSON,
-                        MavenDependencies.COMMONS_CLI))
-            .build();
+                        MavenDependencies.COMMONS_CLI)).build();
         BuildRequest<?, Out<ArrayList<File>>, ?, ?> mavenRequest =
             new BuildRequest<>(MavenDependencyResolver.factory, mavenInput);
-
-        ArrayList<File> classPath = this.requireBuild(mavenRequest).val();
+        ArrayList<File> classpath = this.requireBuild(mavenRequest).val();
 
         //get antlr-4.4-complete
         HTTPInput httpInput = new HTTPInput(
@@ -80,24 +79,23 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
                  new File("lib"),
                  "antlr-4.4-complete.jar",
                  0);//never check for new update
-
         BuildRequest<?, ?, ?, ?> httpRequest =
             new BuildRequest<>(HTTPDownloader.factory, httpInput);
         this.requireBuild(httpRequest);
 
-        classPath.add(new File("lib/antlr-4.4-complete.jar"));
-        classPath.add(sbjJar);
 
         //compile src
+        classpath.add(new File("lib/antlr-4.4-complete.jar"));
+        classpath.add(sbjJar);
         List<BuildRequest<?, ?, ?, ?>> requiredUnits =
             Arrays.asList(baseRequest, mavenRequest, httpRequest);
-
         BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
                 input.srcDir,
                 input.targetDir,
-                classPath,
+                classpath,
                 requiredUnits);
         this.requireBuild(javaRequest);
+
         //build jar
         File manifest = new File("sj-manifest.txt");
         this.require(manifest);
@@ -107,7 +105,7 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
                 manifest,
                 "1.0",
                 "monto.service.java8.JavaServices",
-                classPath, 
+                classpath,
                 false);
         mfGenerator.generate();
         BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest };
