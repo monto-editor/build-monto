@@ -25,7 +25,7 @@ public class ManifestFileGenerator {
     }
 
     public void generate() throws IOException {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("Manifest-Version: ").append(version);
         sb.append("\n");
         if (entryPoint != null) {
