@@ -6,17 +6,12 @@ import build.pluto.buildjava.JavaInput;
 import build.pluto.buildjava.JavaJar;
 import build.pluto.buildjava.compiler.JavacCompiler;
 import build.pluto.buildjava.util.FileExtensionFilter;
+import org.sugarj.common.FileCommands;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import org.sugarj.common.FileCommands;
+import java.util.*;
 
 public class JavaUtil {
     public static final FileFilter classFileFilter = new FileExtensionFilter("class");

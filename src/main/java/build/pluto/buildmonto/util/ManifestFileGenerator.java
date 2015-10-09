@@ -1,11 +1,11 @@
 package build.pluto.buildmonto.util;
 
+import org.sugarj.common.FileCommands;
+
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
-import org.sugarj.common.FileCommands;
 
 public class ManifestFileGenerator {
     private final File root;
