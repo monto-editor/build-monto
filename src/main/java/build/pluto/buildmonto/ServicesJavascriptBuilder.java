@@ -9,10 +9,11 @@ import build.pluto.buildgit.GitRemoteSynchronizer;
 import build.pluto.buildmaven.MavenDependencyResolver;
 import build.pluto.buildmaven.input.MavenInput;
 import build.pluto.buildmonto.util.JavaUtil;
+import build.pluto.buildmonto.util.ManifestFileGenerator;
 import build.pluto.output.None;
 import build.pluto.output.Out;
-
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -84,10 +85,22 @@ public class ServicesJavascriptBuilder extends Builder<ServicesJavascriptInput, 
                 requiredUnits);
         this.requireBuild(javaRequest);
         //build jar
+        File manifest = new File("sjs-manifest.txt");
+        this.require(manifest);
+        File currentWorkingDir = Paths.get("").toFile();
+        ManifestFileGenerator mfGenerator = new ManifestFileGenerator(
+                currentWorkingDir,
+                manifest,
+                "1.0",
+                "monto.service.ecmascript.ECMAScriptServices",
+                classPath,
+                false);
+        mfGenerator.writeOutFile();
         BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest };
         BuildRequest<?, ?, ?, ?> jarRequest = JavaUtil.createJar(
                 input.targetDir,
                 input.jarLocation,
+                manifest,
                 requiredUnitsForJar);
         this.requireBuild(jarRequest);
         return None.val;
