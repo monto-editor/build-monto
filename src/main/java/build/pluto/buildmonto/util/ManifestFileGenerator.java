@@ -24,7 +24,7 @@ public class ManifestFileGenerator {
         this.sealedPackages = sealedPackages;
     }
 
-    public void writeOutFile() throws IOException {
+    public void generate() throws IOException {
         StringBuffer sb = new StringBuffer();
         sb.append("Manifest-Version: ").append(version);
         sb.append("\n");
@@ -38,15 +38,18 @@ public class ManifestFileGenerator {
                 if(root != null) {
                     Path relPath = FileCommands.getRelativePath(root, f);
                     sb.append(relPath.toString());
-                    sb.append(" \n ");
+                } else {
+                    sb.append("file://" + f.getAbsolutePath().toString());
                 }
+                sb.append(" \n ");
             }
             sb.append("\n");
         }
-        sb.append("Sealed: ").append(sealedPackages);
+        if(sealedPackages) {
+            sb.append("Sealed: ").append(sealedPackages);
+            sb.append("\n");
+        }
         sb.append("\n");
-        sb.append("\n");
-        System.out.println(sb.toString());
         if (!path.exists()) {
             FileCommands.createFile(path.getAbsoluteFile());
         }

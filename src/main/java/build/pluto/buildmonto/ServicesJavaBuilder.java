@@ -109,7 +109,7 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
                 "monto.service.java8.JavaServices",
                 classPath, 
                 false);
-        mfGenerator.writeOutFile();
+        mfGenerator.generate();
         BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest };
         BuildRequest<?, ?, ?, ?> jarRequest = JavaUtil.createJar(
                 input.targetDir,

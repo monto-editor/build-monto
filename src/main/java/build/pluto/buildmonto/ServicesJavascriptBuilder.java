@@ -95,7 +95,7 @@ public class ServicesJavascriptBuilder extends Builder<ServicesJavascriptInput, 
                 "monto.service.ecmascript.ECMAScriptServices",
                 classPath,
                 false);
-        mfGenerator.writeOutFile();
+        mfGenerator.generate();
         BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest };
         BuildRequest<?, ?, ?, ?> jarRequest = JavaUtil.createJar(
                 input.targetDir,

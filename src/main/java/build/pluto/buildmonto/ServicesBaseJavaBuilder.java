@@ -75,7 +75,7 @@ public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None
                 null,
                 mavenOutput.val(),
                 false);
-        mfGenerator.writeOutFile();
+        mfGenerator.generate();
         BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest };
         BuildRequest<?, ?, ?, ?> jarRequest = JavaUtil.createJar(
                 input.target,
