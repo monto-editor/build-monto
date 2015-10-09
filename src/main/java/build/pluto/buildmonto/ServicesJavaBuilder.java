@@ -15,12 +15,13 @@ import build.pluto.buildjava.util.FileExtensionFilter;
 import build.pluto.buildmaven.MavenDependencyResolver;
 import build.pluto.buildmaven.input.MavenInput;
 import build.pluto.buildmonto.util.JavaUtil;
-import build.pluto.buildmonto.util.ManifestWriter;
+import build.pluto.buildmonto.util.ManifestFileGenerator;
 import build.pluto.output.None;
 import build.pluto.output.Out;
 import java.io.File;
 import java.io.FileFilter;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -104,10 +105,22 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
                 requiredUnits);
         this.requireBuild(javaRequest);
         //build jar
+        File manifest = new File("sj-manifest.txt");
+        this.require(manifest);
+        File currentWorkingDir = Paths.get("").toFile();
+        ManifestFileGenerator mfGenerator = new ManifestFileGenerator(
+                currentWorkingDir,
+                manifest,
+                "1.0",
+                "monto.service.java8.JavaServices",
+                classPath, 
+                false);
+        mfGenerator.writeOutFile();
         BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest };
         BuildRequest<?, ?, ?, ?> jarRequest = JavaUtil.createJar(
                 input.targetDir,
                 input.jarLocation,
+                manifest,
                 requiredUnitsForJar);
         this.requireBuild(jarRequest);
         return None.val;

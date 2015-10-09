@@ -15,11 +15,13 @@ import build.pluto.buildmaven.input.ArtifactConstraint;
 import build.pluto.buildmaven.input.Dependency;
 import build.pluto.buildmaven.input.MavenInput;
 import build.pluto.buildmonto.util.JavaUtil;
+import build.pluto.buildmonto.util.ManifestFileGenerator;
 import build.pluto.output.None;
 import build.pluto.output.Out;
 import java.io.File;
 import java.io.FileFilter;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -81,10 +83,21 @@ public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None
 
         //build jar out of classfiles
 
+        File manifest = new File("sbj-manifest.txt");
+        File currentWorkingDir = Paths.get("").toFile();
+        ManifestFileGenerator mfGenerator= new ManifestFileGenerator(
+                currentWorkingDir,
+                manifest,
+                "1.0",
+                null,
+                mavenOutput.val(),
+                false);
+        mfGenerator.writeOutFile();
         BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest };
         BuildRequest<?, ?, ?, ?> jarRequest = JavaUtil.createJar(
                 input.target,
                 input.jarLocation,
+                manifest,
                 requiredUnitsForJar);
         this.requireBuild(jarRequest);
 

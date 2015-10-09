@@ -48,6 +48,7 @@ public class JavaUtil {
     public static BuildRequest<?, ?, ?, ?> createJar(
             File target,
             File jarToCreate,
+            File manifest,
             BuildRequest<?,?,?,?>[] requiredUnits) {
 
         List<Path> classfilePaths =
@@ -60,7 +61,7 @@ public class JavaUtil {
         JavaJar.Input jarInput = new JavaJar.Input(
                 JavaJar.Mode.CreateOrUpdate,
                 jarToCreate,
-                null,
+                manifest,
                 classfiles,
                 requiredUnits);
         return new BuildRequest<>(JavaJar.factory, jarInput);
