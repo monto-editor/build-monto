@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.Serializable;
 
 public class ServicesJavaInput implements Serializable {
+    private static final long serialVersionUID = 1952189069839703973L;
+
     public final String servicesBaseJavaGitURL =
         "https://github.com/monto-editor/services-base-java";
     public final File servicesBaseJavaDir = new File("services-base-java");

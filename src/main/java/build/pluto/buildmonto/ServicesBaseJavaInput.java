@@ -9,6 +9,8 @@ import java.io.Serializable;
 import java.util.List;
 
 public class ServicesBaseJavaInput implements Serializable {
+    private static final long serialVersionUID = -8432928706675953694L;
+
     public final File src;
     public final File target;
     public final File jarLocation;
