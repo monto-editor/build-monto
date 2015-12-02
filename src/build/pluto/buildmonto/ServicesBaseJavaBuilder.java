@@ -44,15 +44,16 @@ public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None
 
     @Override
     protected None build(ServicesBaseJavaInput input) throws Throwable {
-    	File checkoutDir = new File("target/services-base-java/git");
+    	File checkoutDir = new File(input.target + "-src");
     	
         //get services-base-java src from git
         GitInput gitInput = 
-        		new GitInput.Builder(new File("target/services-base-java"), REPO_URL)
+        		new GitInput.Builder(checkoutDir, REPO_URL)
                 .setBound(new BranchBound(REPO_URL, "master"))
                 .setConsistencyCheckInterval(RemoteRequirement.CHECK_ALWAYS)
                 .build();
-        requireBuild(GitRemoteSynchronizer.factory, gitInput);
+        BuildRequest<?,?,?,?> gitRequest = new BuildRequest<>(GitRemoteSynchronizer.factory, gitInput);
+        requireBuild(gitRequest);
 
         //resolve maven dependencies
         MavenInput mavenInput = new MavenInput.Builder(
@@ -65,23 +66,21 @@ public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None
         ArrayList<File> classpath =  this.requireBuild(mavenRequest).val();
 
         //compile src
-        List<BuildRequest<?, ?, ?, ?>> requiredUnits;
-        if(input.requiredUnits != null) {
-            requiredUnits = new ArrayList<>(input.requiredUnits);
-            requiredUnits.add(mavenRequest);
-        } else {
-        	requiredUnits = new ArrayList<>();
-            requiredUnits.add(mavenRequest);
-        }
+        List<BuildRequest<?, ?, ?, ?>> requiredForJavac = new ArrayList<>();
+        requiredForJavac.add(gitRequest);
+        requiredForJavac.add(mavenRequest);
+        if(input.requiredUnits != null)
+            requiredForJavac.addAll(input.requiredUnits);
+        
         BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
                 checkoutDir,
                 input.target,
                 classpath,
-                requiredUnits);
+                requiredForJavac);
         this.requireBuild(javaRequest);
 
         //build jar
-        File manifest = new File("target/services-base-java/manifest.mf");
+        File manifest = new File(input.target, "manifest.mf");
         File currentWorkingDir = Paths.get("").toFile();
         ManifestFileGenerator mfGenerator= new ManifestFileGenerator(
                 currentWorkingDir,
@@ -91,6 +90,8 @@ public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None
                 classpath,
                 false);
         mfGenerator.generate();
+        provide(manifest);
+        
         BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest };
         BuildRequest<?, ?, ?, ?> jarRequest = JavaUtil.createJar(
                 input.target,

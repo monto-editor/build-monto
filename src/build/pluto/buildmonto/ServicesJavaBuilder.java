@@ -42,9 +42,10 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
     @Override
     protected None build(ServicesJavaInput input) throws Throwable {
         //compile services-base-java and build jar
-        ServicesBaseJavaInput baseInput = new ServicesBaseJavaInput(
-                input.baseTarget,
-                input.baseJar,
+    	File servicesBaseJavaJar = new File("target/services-base-java.jar");
+    	ServicesBaseJavaInput baseInput = new ServicesBaseJavaInput(
+        		new File("target/services-base-java"),
+        		servicesBaseJavaJar,
                 null);
         BuildRequest<?, ?, ?, ?> baseRequest =
             new BuildRequest<>(ServicesBaseJavaBuilder.factory, baseInput);
@@ -69,21 +70,24 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
             new BuildRequest<>(HTTPDownloader.factory, httpInput);
         this.requireBuild(httpRequest);
 
+        //git sync src
+        File checkoutDir = new File(input.targetDir + "-src");
+        // TODO require git sync here
+        
         //compile src
         classpath.add(new File("lib/antlr-4.4-complete.jar"));
-        classpath.add(input.baseJar);
+        classpath.add(servicesBaseJavaJar);
         List<BuildRequest<?, ?, ?, ?>> requiredUnits =
             Arrays.<BuildRequest<?, ?, ?, ?>>asList(baseRequest, mavenRequest, httpRequest);
         BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
-                input.srcDir,
+                checkoutDir,
                 input.targetDir,
                 classpath,
                 requiredUnits);
         this.requireBuild(javaRequest);
 
         //build jar
-        File manifest = new File("sj-manifest.txt");
-        this.require(manifest);
+        File manifest = new File(input.targetDir, "manifest.mf");
         File currentWorkingDir = Paths.get("").toFile();
         ManifestFileGenerator mfGenerator = new ManifestFileGenerator(
                 currentWorkingDir,
@@ -93,6 +97,8 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
                 classpath,
                 false);
         mfGenerator.generate();
+        provide(manifest);
+        
         BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest };
         BuildRequest<?, ?, ?, ?> jarRequest = JavaUtil.createJar(
                 input.targetDir,
