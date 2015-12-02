@@ -12,15 +12,14 @@ import build.pluto.buildmaven.MavenDependencyResolver;
 import build.pluto.buildmaven.input.MavenInput;
 import build.pluto.buildmonto.util.JavaUtil;
 import build.pluto.buildmonto.util.ManifestFileGenerator;
+import build.pluto.dependency.RemoteRequirement;
 import build.pluto.output.None;
 import build.pluto.output.Out;
-
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 
 public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
 
@@ -44,19 +43,16 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
     @Override
     protected None build(ServicesJavaInput input) throws Throwable {
         //get services-base-java src from git
-        GitInput gitInput = new GitInput.Builder(
-                input.servicesBaseJavaDir,
-                input.servicesBaseJavaGitURL).build();
+        GitInput gitInput = GitSettings.toInput();
         BuildRequest<?, ?, ?, ?> gitRequest =
             new BuildRequest<>(GitRemoteSynchronizer.factory, gitInput);
         this.requireBuild(gitRequest);
 
         //compile services-base-java and build jar
-        File sbjJar = new File("services-base-java.jar");
         ServicesBaseJavaInput baseInput = new ServicesBaseJavaInput(
-                input.servicesBaseJavaDir,
-                new File("targetsb"),
-                sbjJar,
+                GitSettings.baseSrc,
+                input.baseTarget,
+                input.baseJar,
                 Arrays.asList(gitRequest));
         BuildRequest<?, ?, ?, ?> baseRequest =
             new BuildRequest<>(ServicesBaseJavaBuilder.factory, baseInput);
@@ -76,17 +72,15 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
         //get antlr-4.4-complete
         HTTPInput httpInput = new HTTPInput(
                  "http://www.antlr.org/download/antlr-4.4-complete.jar",
-                 new File("lib"),
-                 "antlr-4.4-complete.jar",
-                 0);//never check for new update
+                 new File("lib/antlr-4.4-complete.jar"),
+                 RemoteRequirement.NEVER_CHECK);
         BuildRequest<?, ?, ?, ?> httpRequest =
             new BuildRequest<>(HTTPDownloader.factory, httpInput);
         this.requireBuild(httpRequest);
 
-
         //compile src
         classpath.add(new File("lib/antlr-4.4-complete.jar"));
-        classpath.add(sbjJar);
+        classpath.add(input.baseJar);
         List<BuildRequest<?, ?, ?, ?>> requiredUnits =
             Arrays.asList(baseRequest, mavenRequest, httpRequest);
         BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(

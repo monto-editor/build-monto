@@ -4,7 +4,6 @@ import build.pluto.builder.BuildManagers;
 import build.pluto.builder.BuildRequest;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 
@@ -26,7 +25,7 @@ public class ServicesBaseJavaInput implements Serializable {
         this.jarLocation = jarLocation;
         this.requiredUnits = requiredUnits;
     }
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Throwable {
         ServicesBaseJavaInput input = new ServicesBaseJavaInput(
                 new File("services-base-java"),
                 new File("targetsb"),

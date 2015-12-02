@@ -4,15 +4,14 @@ import build.pluto.builder.BuildManagers;
 import build.pluto.builder.BuildRequest;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 
 public class ServicesJavaInput implements Serializable {
     private static final long serialVersionUID = 1952189069839703973L;
 
-    public final String servicesBaseJavaGitURL =
-        "https://github.com/monto-editor/services-base-java";
-    public final File servicesBaseJavaDir = new File("services-base-java");
+    public final File baseTarget = new File("target-sbj");
+    public final File baseJar = new File("sbj.jar");
+
     public final File srcDir;
     public final File targetDir;
     public final File jarLocation = new File("services-java.jar");
@@ -22,7 +21,7 @@ public class ServicesJavaInput implements Serializable {
         this.targetDir = targetDir;
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Throwable {
         ServicesJavaInput input = new ServicesJavaInput(
                 new File("services-java"),
                 new File("targetsj"));

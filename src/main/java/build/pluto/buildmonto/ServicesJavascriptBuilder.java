@@ -41,19 +41,16 @@ public class ServicesJavascriptBuilder extends Builder<ServicesJavascriptInput, 
     @Override
     protected None build(ServicesJavascriptInput input) throws Throwable {
         //get services-base-java src from git
-        GitInput gitInput = new GitInput.Builder(
-                input.servicesBaseJavaDir,
-                input.servicesBaseJavaGitURL).build();
+        GitInput gitInput = GitSettings.toInput();
         BuildRequest<?, ?, ?, ?> gitRequest =
             new BuildRequest<>(GitRemoteSynchronizer.factory, gitInput);
         this.requireBuild(gitRequest);
 
         //compile services-base-java
-        File sbjJar = new File("services-base-java.jar");
         ServicesBaseJavaInput baseInput = new ServicesBaseJavaInput(
-                input.servicesBaseJavaDir,
-                new File("targetsb"),
-                sbjJar,
+                GitSettings.baseSrc,
+                input.baseTarget,
+                input.baseJar,
                 Arrays.asList(gitRequest));
 
         BuildRequest<?, ?, ?, ?> baseRequest =
@@ -73,7 +70,7 @@ public class ServicesJavascriptBuilder extends Builder<ServicesJavascriptInput, 
         ArrayList<File> classpath = this.requireBuild(mavenRequest).val();
 
         //compile src
-        classpath.add(sbjJar);
+        classpath.add(input.baseJar);
         List<BuildRequest<?, ?, ?, ?>> requiredUnits =
             Arrays.asList(baseRequest, mavenRequest);
         BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
