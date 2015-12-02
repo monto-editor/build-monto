@@ -2,10 +2,12 @@ package build.pluto.buildmonto.util;
 
 import build.pluto.builder.BuildRequest;
 import build.pluto.buildjava.JavaBuilder;
+import build.pluto.buildjava.JavaBulkBuilder;
 import build.pluto.buildjava.JavaInput;
 import build.pluto.buildjava.JavaJar;
 import build.pluto.buildjava.compiler.JavacCompiler;
 import build.pluto.buildjava.util.FileExtensionFilter;
+
 import org.sugarj.common.FileCommands;
 
 import java.io.File;
@@ -39,7 +41,7 @@ public class JavaUtil {
                 "1.8",
                 requiredUnits,
                 JavacCompiler.instance);
-        return JavaBuilder.request(javaInput);
+        return new BuildRequest<>(JavaBulkBuilder.factory, javaInput);
     }
 
     public static BuildRequest<?, ?, ?, ?> createJar(
