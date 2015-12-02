@@ -1,11 +1,10 @@
 package build.pluto.buildmonto;
 
-import build.pluto.builder.BuildManagers;
-import build.pluto.builder.BuildRequest;
-
 import java.io.File;
 import java.io.Serializable;
 import java.util.List;
+
+import build.pluto.builder.BuildRequest;
 
 public class ServicesBaseJavaInput implements Serializable {
     private static final long serialVersionUID = -8432928706675953694L;
@@ -25,13 +24,4 @@ public class ServicesBaseJavaInput implements Serializable {
         this.jarLocation = jarLocation;
         this.requiredUnits = requiredUnits;
     }
-    public static void main(String[] args) throws Throwable {
-        ServicesBaseJavaInput input = new ServicesBaseJavaInput(
-                new File("services-base-java"),
-                new File("targetsb"),
-                new File("sbj.jar"),
-                null);
-        BuildManagers.build(
-                new BuildRequest<>(ServicesBaseJavaBuilder.factory, input));
-	}
 }
