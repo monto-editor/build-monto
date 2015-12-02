@@ -62,9 +62,10 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
         ArrayList<File> classpath = this.requireBuild(mavenRequest).val();
 
         //get antlr-4.4-complete
+        File antlrJar = new File(input.targetDir, "lib/antlr-4.4-complete.jar");
         HTTPInput httpInput = new HTTPInput(
                  "http://www.antlr.org/download/antlr-4.4-complete.jar",
-                 new File("lib/antlr-4.4-complete.jar"),
+                 antlrJar,
                  RemoteRequirement.CHECK_NEVER);
         BuildRequest<?, ?, ?, ?> httpRequest =
             new BuildRequest<>(HTTPDownloader.factory, httpInput);
@@ -75,7 +76,7 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
         // TODO require git sync here
         
         //compile src
-        classpath.add(new File("lib/antlr-4.4-complete.jar"));
+        classpath.add(antlrJar);
         classpath.add(servicesBaseJavaJar);
         List<BuildRequest<?, ?, ?, ?>> requiredUnits =
             Arrays.<BuildRequest<?, ?, ?, ?>>asList(baseRequest, mavenRequest, httpRequest);
