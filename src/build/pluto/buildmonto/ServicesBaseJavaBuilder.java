@@ -1,5 +1,11 @@
 package build.pluto.buildmonto;
 
+import java.io.File;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import build.pluto.builder.BuildRequest;
 import build.pluto.builder.Builder;
 import build.pluto.builder.BuilderFactory;
@@ -14,12 +20,6 @@ import build.pluto.buildmonto.util.ManifestFileGenerator;
 import build.pluto.dependency.RemoteRequirement;
 import build.pluto.output.None;
 import build.pluto.output.Out;
-
-import java.io.File;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None> {
 	
@@ -56,7 +56,6 @@ public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None
 
         //resolve maven dependencies
         MavenInput mavenInput = new MavenInput.Builder(
-                    new File("lib"),
                     Arrays.asList(
                         MavenDependencies.JEROMQ,
                         MavenDependencies.JSON)).build();

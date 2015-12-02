@@ -52,7 +52,6 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
 
         //resolve maven dependencies
         MavenInput mavenInput = new MavenInput.Builder(
-                    new File("lib"),
                     Arrays.asList(
                         MavenDependencies.JEROMQ,
                         MavenDependencies.JSON,
