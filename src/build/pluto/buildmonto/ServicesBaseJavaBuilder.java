@@ -4,10 +4,14 @@ import build.pluto.builder.BuildRequest;
 import build.pluto.builder.Builder;
 import build.pluto.builder.BuilderFactory;
 import build.pluto.builder.BuilderFactoryFactory;
+import build.pluto.buildgit.GitInput;
+import build.pluto.buildgit.GitRemoteSynchronizer;
+import build.pluto.buildgit.bound.BranchBound;
 import build.pluto.buildmaven.MavenDependencyResolver;
 import build.pluto.buildmaven.input.MavenInput;
 import build.pluto.buildmonto.util.JavaUtil;
 import build.pluto.buildmonto.util.ManifestFileGenerator;
+import build.pluto.dependency.RemoteRequirement;
 import build.pluto.output.None;
 import build.pluto.output.Out;
 
@@ -18,6 +22,8 @@ import java.util.Arrays;
 import java.util.List;
 
 public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None> {
+	
+    public static final String REPO_URL = "https://github.com/monto-editor/services-base-java";
 
     public static BuilderFactory<ServicesBaseJavaInput, None, ServicesBaseJavaBuilder> factory
         = BuilderFactoryFactory.of(ServicesBaseJavaBuilder.class, ServicesBaseJavaInput.class);
@@ -38,6 +44,16 @@ public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None
 
     @Override
     protected None build(ServicesBaseJavaInput input) throws Throwable {
+    	File checkoutDir = new File("target/services-base-java/git");
+    	
+        //get services-base-java src from git
+        GitInput gitInput = 
+        		new GitInput.Builder(new File("target/services-base-java"), REPO_URL)
+                .setBound(new BranchBound(REPO_URL, "master"))
+                .setConsistencyCheckInterval(RemoteRequirement.CHECK_ALWAYS)
+                .build();
+        requireBuild(GitRemoteSynchronizer.factory, gitInput);
+
         //resolve maven dependencies
         MavenInput mavenInput = new MavenInput.Builder(
                     new File("lib"),
@@ -59,14 +75,14 @@ public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None
             requiredUnits.add(mavenRequest);
         }
         BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
-                input.src,
+                checkoutDir,
                 input.target,
                 classpath,
                 requiredUnits);
         this.requireBuild(javaRequest);
 
         //build jar
-        File manifest = new File("sbj-manifest.txt");
+        File manifest = new File("target/services-base-java/manifest.mf");
         File currentWorkingDir = Paths.get("").toFile();
         ManifestFileGenerator mfGenerator= new ManifestFileGenerator(
                 currentWorkingDir,

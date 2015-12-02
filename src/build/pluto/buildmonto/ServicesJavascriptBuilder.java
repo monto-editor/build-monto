@@ -1,22 +1,21 @@
 package build.pluto.buildmonto;
 
+import java.io.File;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import build.pluto.builder.BuildRequest;
 import build.pluto.builder.Builder;
 import build.pluto.builder.BuilderFactory;
 import build.pluto.builder.BuilderFactoryFactory;
-import build.pluto.buildgit.GitInput;
-import build.pluto.buildgit.GitRemoteSynchronizer;
 import build.pluto.buildmaven.MavenDependencyResolver;
 import build.pluto.buildmaven.input.MavenInput;
 import build.pluto.buildmonto.util.JavaUtil;
 import build.pluto.buildmonto.util.ManifestFileGenerator;
 import build.pluto.output.None;
 import build.pluto.output.Out;
-import java.io.File;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 
 public class ServicesJavascriptBuilder extends Builder<ServicesJavascriptInput, None> {
@@ -40,18 +39,11 @@ public class ServicesJavascriptBuilder extends Builder<ServicesJavascriptInput, 
 
     @Override
     protected None build(ServicesJavascriptInput input) throws Throwable {
-        //get services-base-java src from git
-        GitInput gitInput = GitSettings.toInput();
-        BuildRequest<?, ?, ?, ?> gitRequest =
-            new BuildRequest<>(GitRemoteSynchronizer.factory, gitInput);
-        this.requireBuild(gitRequest);
-
         //compile services-base-java
         ServicesBaseJavaInput baseInput = new ServicesBaseJavaInput(
-                GitSettings.baseSrc,
                 input.baseTarget,
                 input.baseJar,
-                Arrays.<BuildRequest<?, ?, ?, ?>>asList(gitRequest));
+                null);
 
         BuildRequest<?, ?, ?, ?> baseRequest =
             new BuildRequest<>(ServicesBaseJavaBuilder.factory, baseInput);

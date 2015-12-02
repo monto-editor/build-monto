@@ -11,7 +11,7 @@ public class ServicesJavaInput implements Serializable {
 
     public final File srcDir;
     public final File targetDir;
-    public final File jarLocation = new File("services-java.jar");
+    public final File jarLocation = new File("target/services-java.jar");
 
     public ServicesJavaInput(File srcDir, File targetDir) {
         this.srcDir = srcDir;
