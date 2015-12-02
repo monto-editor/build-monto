@@ -1,6 +1,7 @@
 package build.pluto.buildmonto;
 
 import java.io.File;
+import java.io.Serializable;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,29 +22,45 @@ import build.pluto.dependency.RemoteRequirement;
 import build.pluto.output.None;
 import build.pluto.output.Out;
 
-public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None> {
+public class ServicesBaseJava extends Builder<ServicesBaseJava.Input, None> {
 	
     public static final String REPO_URL = "https://github.com/monto-editor/services-base-java";
 
-    public static BuilderFactory<ServicesBaseJavaInput, None, ServicesBaseJavaBuilder> factory
-        = BuilderFactoryFactory.of(ServicesBaseJavaBuilder.class, ServicesBaseJavaInput.class);
+    public static class Input implements Serializable {
+        private static final long serialVersionUID = -8432928706675953694L;
 
-    public ServicesBaseJavaBuilder(ServicesBaseJavaInput input) {
+        public final File target;
+        public final File jarLocation;
+        public List<BuildRequest<?, ?, ?, ?>> requiredUnits;
+
+        public Input(
+                File target,
+                File jarLocation,
+                List<BuildRequest<?, ?, ?, ?>> requiredUnits) {
+            this.target = target;
+            this.jarLocation = jarLocation;
+            this.requiredUnits = requiredUnits;
+        }
+    }
+    
+    public static BuilderFactory<Input, None, ServicesBaseJava> factory = BuilderFactoryFactory.of(ServicesBaseJava.class, Input.class);
+
+    public ServicesBaseJava(Input input) {
         super(input);
     }
 
     @Override
-    public File persistentPath(ServicesBaseJavaInput input) {
+    public File persistentPath(Input input) {
         return new File(input.target, "services-base-java.dep");
     }
 
     @Override
-    protected String description(ServicesBaseJavaInput input) {
+    protected String description(Input input) {
         return "Build monto:services-base-java";
     }
 
     @Override
-    protected None build(ServicesBaseJavaInput input) throws Throwable {
+    protected None build(Input input) throws Throwable {
     	File checkoutDir = new File(input.target + "-src");
     	
         //get services-base-java src from git

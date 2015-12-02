@@ -1,6 +1,7 @@
 package build.pluto.buildmonto;
 
 import java.io.File;
+import java.io.Serializable;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,45 +11,58 @@ import build.pluto.builder.BuildRequest;
 import build.pluto.builder.Builder;
 import build.pluto.builder.BuilderFactory;
 import build.pluto.builder.BuilderFactoryFactory;
-import build.pluto.buildhttp.HTTPDownloader;
-import build.pluto.buildhttp.HTTPInput;
 import build.pluto.buildmaven.MavenDependencyResolver;
 import build.pluto.buildmaven.input.MavenInput;
 import build.pluto.buildmonto.util.JavaUtil;
 import build.pluto.buildmonto.util.ManifestFileGenerator;
-import build.pluto.dependency.RemoteRequirement;
 import build.pluto.output.None;
 import build.pluto.output.Out;
 
-public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
 
-    public static BuilderFactory<ServicesJavaInput, None, ServicesJavaBuilder> factory
-        = BuilderFactoryFactory.of(ServicesJavaBuilder.class, ServicesJavaInput.class);
+public class ServicesJavascript extends Builder<ServicesJavascript.Input, None> {
 
-    public ServicesJavaBuilder(ServicesJavaInput input) {
+	public static class Input implements Serializable {
+	    private static final long serialVersionUID = 6927714821370770411L;
+
+	    public final File targetDir;
+	    public final File jarLocation;
+	    public List<BuildRequest<?, ?, ?, ?>> requiredUnits;
+
+	    public Input(File targetDir, File jarLocation, List<BuildRequest<?, ?, ?, ?>> requiredUnits) {
+	        this.targetDir = targetDir;
+	        this.jarLocation = jarLocation;
+	        this.requiredUnits = requiredUnits;
+	    }
+	}
+
+    public static BuilderFactory<Input, None, ServicesJavascript> factory
+        = BuilderFactoryFactory.of(ServicesJavascript.class, Input.class);
+
+    public ServicesJavascript(Input input) {
         super(input);
     }
 
     @Override
-    public File persistentPath(ServicesJavaInput input) {
-        return new File(input.targetDir, "services-java.dep");
+    public File persistentPath(Input input) {
+        return new File(input.targetDir, "services-javascript.dep");
     }
 
     @Override
-    protected String description(ServicesJavaInput input) {
-        return "Build monto:services-java";
+    protected String description(Input input) {
+        return "Build monto:services-javascript";
     }
 
     @Override
-    protected None build(ServicesJavaInput input) throws Throwable {
-        //compile services-base-java and build jar
+    protected None build(Input input) throws Throwable {
+        //compile services-base-java
     	File servicesBaseJavaJar = new File("target/services-base-java.jar");
-    	ServicesBaseJavaInput baseInput = new ServicesBaseJavaInput(
+        ServicesBaseJava.Input baseInput = new ServicesBaseJava.Input(
         		new File("target/services-base-java"),
         		servicesBaseJavaJar,
                 null);
+
         BuildRequest<?, ?, ?, ?> baseRequest =
-            new BuildRequest<>(ServicesBaseJavaBuilder.factory, baseInput);
+            new BuildRequest<>(ServicesBaseJava.factory, baseInput);
         this.requireBuild(baseRequest);
 
         //resolve maven dependencies
@@ -56,35 +70,23 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
                     Arrays.asList(
                         MavenDependencies.JEROMQ,
                         MavenDependencies.JSON,
-                        MavenDependencies.COMMONS_CLI)).build();
+                        MavenDependencies.COMMONS_CLI,
+                        MavenDependencies.ANTLR)).build();
         BuildRequest<?, Out<ArrayList<File>>, ?, ?> mavenRequest =
             new BuildRequest<>(MavenDependencyResolver.factory, mavenInput);
         ArrayList<File> classpath = this.requireBuild(mavenRequest).val();
 
-        //get antlr-4.4-complete
-        File antlrJar = new File(input.targetDir, "lib/antlr-4.4-complete.jar");
-        HTTPInput httpInput = new HTTPInput(
-                 "http://www.antlr.org/download/antlr-4.4-complete.jar",
-                 antlrJar,
-                 RemoteRequirement.CHECK_NEVER);
-        BuildRequest<?, ?, ?, ?> httpRequest =
-            new BuildRequest<>(HTTPDownloader.factory, httpInput);
-        this.requireBuild(httpRequest);
-
-        //git sync src
+        //checkout src
         File checkoutDir = new File(input.targetDir + "-src");
         // TODO require git sync here
         
         //compile src
-        classpath.add(antlrJar);
         classpath.add(servicesBaseJavaJar);
-        List<BuildRequest<?, ?, ?, ?>> requiredUnits =
-            Arrays.<BuildRequest<?, ?, ?, ?>>asList(baseRequest, mavenRequest, httpRequest);
         BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
                 checkoutDir,
                 input.targetDir,
                 classpath,
-                requiredUnits);
+                Arrays.<BuildRequest<?, ?, ?, ?>>asList(baseRequest, mavenRequest));
         this.requireBuild(javaRequest);
 
         //build jar
@@ -94,7 +96,7 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
                 currentWorkingDir,
                 manifest,
                 "1.0",
-                "monto.service.java8.JavaServices",
+                "monto.service.ecmascript.ECMAScriptServices",
                 classpath,
                 false);
         mfGenerator.generate();

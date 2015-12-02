@@ -8,17 +8,17 @@ import build.pluto.builder.BuildRequest;
 public class Main {
 
 	public static void main(String[] args) throws Throwable {
-        ServicesJavaInput javaInput = new ServicesJavaInput(
+		ServicesJava.Input javaInput = new ServicesJava.Input(
       		  new File ("target/services-java"),
       		  new File ("target/services-java.jar"),
       		  null);
-        BuildManagers.build(new BuildRequest<>(ServicesJavaBuilder.factory, javaInput));
+        BuildManagers.build(new BuildRequest<>(ServicesJava.factory, javaInput));
         
-      ServicesJavascriptInput jsInput = new ServicesJavascriptInput(
+		ServicesJavascript.Input jsInput = new ServicesJavascript.Input(
     		  new File ("target/services-javascript"),
     		  new File ("target/services-javascript.jar"),
     		  null);
-      BuildManagers.build(new BuildRequest<>(ServicesJavascriptBuilder.factory, jsInput));
+      BuildManagers.build(new BuildRequest<>(ServicesJavascript.factory, jsInput));
 	}
 
 }
