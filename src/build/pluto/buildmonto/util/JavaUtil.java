@@ -35,6 +35,8 @@ public class JavaUtil {
                 sourcePath,
                 jarFiles,
                 null,
+                "1.8",
+                "1.8",
                 requiredUnits,
                 JavacCompiler.instance);
         return JavaBuilder.request(javaInput);
