@@ -94,22 +94,20 @@ public class ServicesBaseJava extends Builder<ServicesBaseJava.Input, None> {
                 input.target,
                 classpath,
                 requiredForJavac);
-        this.requireBuild(javaRequest);
 
         //build jar
         File manifest = new File(input.target, "manifest.mf");
         File currentWorkingDir = Paths.get("").toFile();
-        ManifestFileGenerator mfGenerator= new ManifestFileGenerator(
+        ManifestFileGenerator.Input mfGeneratorInput= new ManifestFileGenerator.Input(
                 currentWorkingDir,
                 manifest,
                 "1.0",
                 null,
                 classpath,
                 false);
-        mfGenerator.generate();
-        provide(manifest);
+        BuildRequest<?,?,?,?> mfGeneratorReq = new BuildRequest<>(ManifestFileGenerator.factory, mfGeneratorInput);
         
-        BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest };
+        BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest, mfGeneratorReq };
         BuildRequest<?, ?, ?, ?> jarRequest = JavaUtil.createJar(
                 input.target,
                 input.jarLocation,

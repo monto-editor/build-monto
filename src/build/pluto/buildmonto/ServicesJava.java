@@ -100,22 +100,20 @@ public class ServicesJava extends Builder<ServicesJava.Input, None> {
                 input.targetDir,
                 classpath,
                 requiredUnits);
-        this.requireBuild(javaRequest);
 
         //build jar
         File manifest = new File(input.targetDir, "manifest.mf");
         File currentWorkingDir = Paths.get("").toFile();
-        ManifestFileGenerator mfGenerator = new ManifestFileGenerator(
+        ManifestFileGenerator.Input mfGeneratorInput = new ManifestFileGenerator.Input(
                 currentWorkingDir,
                 manifest,
                 "1.0",
                 "monto.service.java8.JavaServices",
                 classpath,
                 false);
-        mfGenerator.generate();
-        provide(manifest);
+        BuildRequest<?,?,?,?> mfGeneratorReq = new BuildRequest<>(ManifestFileGenerator.factory, mfGeneratorInput);
         
-        BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest };
+        BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest, mfGeneratorReq };
         BuildRequest<?, ?, ?, ?> jarRequest = JavaUtil.createJar(
                 input.targetDir,
                 input.jarLocation,
