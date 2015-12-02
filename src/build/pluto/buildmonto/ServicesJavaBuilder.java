@@ -53,7 +53,7 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
                 GitSettings.baseSrc,
                 input.baseTarget,
                 input.baseJar,
-                Arrays.asList(gitRequest));
+                Arrays.<BuildRequest<?, ?, ?, ?>>asList(gitRequest));
         BuildRequest<?, ?, ?, ?> baseRequest =
             new BuildRequest<>(ServicesBaseJavaBuilder.factory, baseInput);
         this.requireBuild(baseRequest);
@@ -73,7 +73,7 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
         HTTPInput httpInput = new HTTPInput(
                  "http://www.antlr.org/download/antlr-4.4-complete.jar",
                  new File("lib/antlr-4.4-complete.jar"),
-                 RemoteRequirement.NEVER_CHECK);
+                 RemoteRequirement.CHECK_NEVER);
         BuildRequest<?, ?, ?, ?> httpRequest =
             new BuildRequest<>(HTTPDownloader.factory, httpInput);
         this.requireBuild(httpRequest);
@@ -82,7 +82,7 @@ public class ServicesJavaBuilder extends Builder<ServicesJavaInput, None> {
         classpath.add(new File("lib/antlr-4.4-complete.jar"));
         classpath.add(input.baseJar);
         List<BuildRequest<?, ?, ?, ?>> requiredUnits =
-            Arrays.asList(baseRequest, mavenRequest, httpRequest);
+            Arrays.<BuildRequest<?, ?, ?, ?>>asList(baseRequest, mavenRequest, httpRequest);
         BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
                 input.srcDir,
                 input.targetDir,

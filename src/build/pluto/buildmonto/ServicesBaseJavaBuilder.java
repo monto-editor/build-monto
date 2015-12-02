@@ -55,7 +55,8 @@ public class ServicesBaseJavaBuilder extends Builder<ServicesBaseJavaInput, None
             requiredUnits = new ArrayList<>(input.requiredUnits);
             requiredUnits.add(mavenRequest);
         } else {
-            requiredUnits = Arrays.asList(mavenRequest);
+        	requiredUnits = new ArrayList<>();
+            requiredUnits.add(mavenRequest);
         }
         BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
                 input.src,

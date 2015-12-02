@@ -51,7 +51,7 @@ public class ServicesJavascriptBuilder extends Builder<ServicesJavascriptInput, 
                 GitSettings.baseSrc,
                 input.baseTarget,
                 input.baseJar,
-                Arrays.asList(gitRequest));
+                Arrays.<BuildRequest<?, ?, ?, ?>>asList(gitRequest));
 
         BuildRequest<?, ?, ?, ?> baseRequest =
             new BuildRequest<>(ServicesBaseJavaBuilder.factory, baseInput);
@@ -72,7 +72,7 @@ public class ServicesJavascriptBuilder extends Builder<ServicesJavascriptInput, 
         //compile src
         classpath.add(input.baseJar);
         List<BuildRequest<?, ?, ?, ?>> requiredUnits =
-            Arrays.asList(baseRequest, mavenRequest);
+            Arrays.<BuildRequest<?, ?, ?, ?>>asList(baseRequest, mavenRequest);
         BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
                 input.srcDir,
                 input.targetDir,
