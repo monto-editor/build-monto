@@ -7,12 +7,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.sugarj.common.FileCommands;
+
 import build.pluto.builder.BuildRequest;
 import build.pluto.builder.Builder;
 import build.pluto.builder.BuilderFactory;
 import build.pluto.builder.BuilderFactoryFactory;
-import build.pluto.buildhttp.HTTPDownloader;
-import build.pluto.buildhttp.HTTPInput;
+import build.pluto.buildgit.GitInput;
+import build.pluto.buildgit.GitRemoteSynchronizer;
+import build.pluto.buildgit.bound.BranchBound;
 import build.pluto.buildmaven.MavenDependencyResolver;
 import build.pluto.buildmaven.input.MavenInput;
 import build.pluto.buildmonto.util.JavaUtil;
@@ -23,6 +26,9 @@ import build.pluto.output.Out;
 
 public class ServicesJava extends Builder<ServicesJava.Input, None> {
 
+	public static final String REPO_URL = "https://github.com/monto-editor/services-java";
+//	public static final String REPO_URL = "file:///Users/seba/projects/monto/services-java";
+	
 	public static class Input implements Serializable {
 	    private static final long serialVersionUID = 1952189069839703973L;
 
@@ -62,9 +68,7 @@ public class ServicesJava extends Builder<ServicesJava.Input, None> {
         		new File("target/services-base-java"),
         		servicesBaseJavaJar,
                 null);
-        BuildRequest<?, ?, ?, ?> baseRequest =
-            new BuildRequest<>(ServicesBaseJava.factory, baseInput);
-        this.requireBuild(baseRequest);
+        BuildRequest<?, ?, ?, ?> baseRequest = new BuildRequest<>(ServicesBaseJava.factory, baseInput);
 
         //resolve maven dependencies
         MavenInput mavenInput = new MavenInput.Builder(
@@ -77,24 +81,31 @@ public class ServicesJava extends Builder<ServicesJava.Input, None> {
         ArrayList<File> classpath = this.requireBuild(mavenRequest).val();
 
         //get antlr-4.4-complete
+        File from = new File("antlr-4.4-complete.jar");
         File antlrJar = new File(input.targetDir, "lib/antlr-4.4-complete.jar");
-        HTTPInput httpInput = new HTTPInput(
-                 "http://www.antlr.org/download/antlr-4.4-complete.jar",
-                 antlrJar,
-                 RemoteRequirement.CHECK_NEVER);
-        BuildRequest<?, ?, ?, ?> httpRequest =
-            new BuildRequest<>(HTTPDownloader.factory, httpInput);
-        this.requireBuild(httpRequest);
+        FileCommands.createFile(antlrJar);
+        FileCommands.copyFile(from,  antlrJar);
+//        HTTPInput httpInput = new HTTPInput(
+//                 "http://www.antlr.org/download/antlr-4.4-complete.jar",
+//                 antlrJar,
+//                 RemoteRequirement.CHECK_NEVER);
+//        BuildRequest<?, ?, ?, ?> httpRequest = new BuildRequest<>(HTTPDownloader.factory, httpInput);
 
-        //git sync src
+        //git sync source code of services-java
         File checkoutDir = new File(input.targetDir + "-src");
-        // TODO require git sync here
+        GitInput gitInput = 
+        		new GitInput.Builder(checkoutDir, REPO_URL)
+                .setBound(new BranchBound(REPO_URL, "master"))
+                .setConsistencyCheckInterval(RemoteRequirement.CHECK_ALWAYS)
+                .build();
+        BuildRequest<?,?,?,?> gitRequest = new BuildRequest<>(GitRemoteSynchronizer.factory, gitInput);
+        requireBuild(gitRequest);
         
         //compile src
         classpath.add(antlrJar);
         classpath.add(servicesBaseJavaJar);
         List<BuildRequest<?, ?, ?, ?>> requiredUnits =
-            Arrays.<BuildRequest<?, ?, ?, ?>>asList(baseRequest, mavenRequest, httpRequest);
+            Arrays.<BuildRequest<?, ?, ?, ?>>asList(baseRequest, mavenRequest, /*httpRequest, */gitRequest);
         BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
                 checkoutDir,
                 input.targetDir,

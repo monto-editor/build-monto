@@ -5,10 +5,9 @@ import java.io.FileFilter;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.sugarj.common.FileCommands;
@@ -31,11 +30,14 @@ public class JavaUtil {
             List<File> jarFiles,
             List<BuildRequest<?,?,?,?>> requiredUnits) {
 
-        List<Path> javaPaths =
-            FileCommands.listFilesRecursive(src.toPath(), javaFileFilter);
+    	// TODO need to install file/directory requirement to get notified about added Java files.
+        List<Path> javaPaths = FileCommands.listFilesRecursive(src.toPath(), javaFileFilter);
         List<File> javaFiles = convertPathToFileList(javaPaths);
-        List<File> sourcePath =
-            Arrays.asList(new File(src, "src"));
+        List<File> sourcePath = Arrays.asList(new File(src, "src"));
+        
+        if (javaFiles.isEmpty())
+        	throw new IllegalStateException("Tried to compile empty list of Java files");
+        
         JavaInput javaInput = new JavaInput(
                 javaFiles,
                 target,
@@ -55,18 +57,17 @@ public class JavaUtil {
             File manifest,
             BuildRequest<?,?,?,?>[] requiredUnits) {
 
-        List<Path> classfilePaths =
-            FileCommands.listFilesRecursive(target.toPath(), classFileFilter);
-        Map<File, Set<File>> classfiles = new HashMap<>();
-        classfiles.put(
-                target,
-                new HashSet<>(convertPathToFileList(classfilePaths)));
+        List<Path> classfilePaths = FileCommands.listFilesRecursive(target.toPath(), classFileFilter);
+        Set<File> classfileSet = new HashSet<>(convertPathToFileList(classfilePaths));
 
+        if (classfileSet.isEmpty())
+        	throw new IllegalStateException("Tried to create JAR file containing no class files");
+        
         JavaJar.Input jarInput = new JavaJar.Input(
                 JavaJar.Mode.CreateOrUpdate,
                 jarToCreate,
                 manifest,
-                classfiles,
+                Collections.singletonMap(target, classfileSet),
                 requiredUnits);
         return new BuildRequest<>(JavaJar.factory, jarInput);
     }

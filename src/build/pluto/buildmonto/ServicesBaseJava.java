@@ -25,6 +25,7 @@ import build.pluto.output.Out;
 public class ServicesBaseJava extends Builder<ServicesBaseJava.Input, None> {
 	
     public static final String REPO_URL = "https://github.com/monto-editor/services-base-java";
+//	public static final String REPO_URL = "file:///Users/seba/projects/monto/services-base-java";
 
     public static class Input implements Serializable {
         private static final long serialVersionUID = -8432928706675953694L;
