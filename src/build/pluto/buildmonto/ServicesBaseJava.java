@@ -74,10 +74,11 @@ public class ServicesBaseJava extends Builder<ServicesBaseJava.Input, None> {
         requireBuild(gitRequest);
 
         //resolve maven dependencies
-        MavenInput mavenInput = new MavenInput.Builder(
-                    Arrays.asList(
-                        MavenDependencies.JEROMQ,
-                        MavenDependencies.JSON)).build();
+        MavenInput mavenInput = 
+        		new MavenInput.Builder()
+        		.addDependency(MavenDependencies.JEROMQ)
+        		.addDependency(MavenDependencies.JSON)
+        		.build();
 
         BuildRequest<?, Out<ArrayList<File>>, ?, ?> mavenRequest =
             new BuildRequest<>(MavenDependencyResolver.factory, mavenInput);
@@ -89,12 +90,12 @@ public class ServicesBaseJava extends Builder<ServicesBaseJava.Input, None> {
         requiredForJavac.add(mavenRequest);
         if(input.requiredUnits != null)
             requiredForJavac.addAll(input.requiredUnits);
-        
         BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
                 checkoutDir,
                 input.target,
                 classpath,
                 requiredForJavac);
+        requireBuild(javaRequest);
 
         //build jar
         File manifest = new File(input.target, "manifest.mf");

@@ -11,16 +11,22 @@ import build.pluto.builder.BuildRequest;
 import build.pluto.builder.Builder;
 import build.pluto.builder.BuilderFactory;
 import build.pluto.builder.BuilderFactoryFactory;
+import build.pluto.buildgit.GitInput;
+import build.pluto.buildgit.GitRemoteSynchronizer;
+import build.pluto.buildgit.bound.BranchBound;
 import build.pluto.buildmaven.MavenDependencyResolver;
 import build.pluto.buildmaven.input.MavenInput;
 import build.pluto.buildmonto.util.JavaUtil;
 import build.pluto.buildmonto.util.ManifestFileGenerator;
+import build.pluto.dependency.RemoteRequirement;
 import build.pluto.output.None;
 import build.pluto.output.Out;
 
 
 public class ServicesJavascript extends Builder<ServicesJavascript.Input, None> {
 
+	public static final String REPO_URL = "https://github.com/monto-editor/services-javascript";
+	
 	public static class Input implements Serializable {
 	    private static final long serialVersionUID = 6927714821370770411L;
 
@@ -66,27 +72,37 @@ public class ServicesJavascript extends Builder<ServicesJavascript.Input, None> 
         this.requireBuild(baseRequest);
 
         //resolve maven dependencies
-        MavenInput mavenInput = new MavenInput.Builder(
-                    Arrays.asList(
-                        MavenDependencies.JEROMQ,
-                        MavenDependencies.JSON,
-                        MavenDependencies.COMMONS_CLI,
-                        MavenDependencies.ANTLR)).build();
+        MavenInput mavenInput = 
+        		new MavenInput.Builder()
+        		.addDependency(MavenDependencies.JEROMQ)
+        		.addDependency(MavenDependencies.JSON)
+        		.addDependency(MavenDependencies.COMMONS_CLI)
+        		.addDependency(MavenDependencies.ANTLR)
+        		.build();
+
         BuildRequest<?, Out<ArrayList<File>>, ?, ?> mavenRequest =
             new BuildRequest<>(MavenDependencyResolver.factory, mavenInput);
         ArrayList<File> classpath = this.requireBuild(mavenRequest).val();
 
-        //checkout src
+        //git sync source code of services-javascript
         File checkoutDir = new File(input.targetDir + "-src");
-        // TODO require git sync here
+        GitInput gitInput = 
+        		new GitInput.Builder(checkoutDir, REPO_URL)
+                .setBound(new BranchBound(REPO_URL, "master"))
+                .setConsistencyCheckInterval(RemoteRequirement.CHECK_ALWAYS)
+                .build();
+        BuildRequest<?,?,?,?> gitRequest = new BuildRequest<>(GitRemoteSynchronizer.factory, gitInput);
+        requireBuild(gitRequest);
         
         //compile src
         classpath.add(servicesBaseJavaJar);
+        List<BuildRequest<?, ?, ?, ?>> requiredUnits = Arrays.<BuildRequest<?, ?, ?, ?>>asList(baseRequest, mavenRequest, gitRequest);
         BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
                 checkoutDir,
                 input.targetDir,
                 classpath,
-                Arrays.<BuildRequest<?, ?, ?, ?>>asList(baseRequest, mavenRequest));
+                requiredUnits);
+        requireBuild(javaRequest);
 
         //build jar
         File manifest = new File(input.targetDir, "manifest.mf");

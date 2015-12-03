@@ -10,12 +10,13 @@ import build.pluto.builder.BuildRequest;
 public class Main {
 
 	public static void main(String[] args) throws Throwable {
-		Log.log.setLoggingLevel(Log.DETAIL);
+//		Log.log.setLoggingLevel(Log.DETAIL);
 		
 		ServicesJava.Input javaInput = new ServicesJava.Input(
       		  new File ("target/services-java"),
       		  new File ("target/services-java.jar"),
       		  null);
+//		BuildManagers.clean(false, new BuildRequest<>(ServicesJava.factory, javaInput));
         BuildManagers.build(new BuildRequest<>(ServicesJava.factory, javaInput));
         
 		ServicesJavascript.Input jsInput = new ServicesJavascript.Input(
