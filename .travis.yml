@@ -1,6 +1,7 @@
 sudo: false
 
 script: |
+  # build and test build-monto
   jdk_switcher use oraclejdk7
   mvn -U compile
   jdk_switcher use oraclejdk8
