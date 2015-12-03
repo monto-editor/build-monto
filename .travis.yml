@@ -2,6 +2,7 @@ sudo: false
 
 script: |
   # build (always) and deploy (master commits only)
+  mvn -v
   if [[ "$TRAVIS_BRANCH" = "master" && "$TRAVIS_PULL_REQUEST" = false ]]; then
     mvn deploy -U --batch-mode
   else
