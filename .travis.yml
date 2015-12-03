@@ -1,9 +1,9 @@
 sudo: false
 
 script: |
-  jdk_switcher oraclejdk7
+  jdk_switcher use oraclejdk7
   mvn compile
-  jdk_switcher oraclejdk8
+  jdk_switcher use oraclejdk8
   mvn test
   # build (always) and deploy (master commits only)
   if [[ "$TRAVIS_BRANCH" = "master" && "$TRAVIS_PULL_REQUEST" = false ]]; then
