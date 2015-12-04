@@ -4,10 +4,8 @@ import java.io.File;
 import java.io.Serializable;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import build.pluto.builder.BuildRequest;
 import build.pluto.builder.Builder;
 import build.pluto.builder.BuilderFactory;
 import build.pluto.builder.BuilderFactoryFactory;
@@ -16,13 +14,16 @@ import build.pluto.buildgit.GitRemoteSynchronizer;
 import build.pluto.buildgit.bound.BranchBound;
 import build.pluto.buildhttp.HTTPDownloader;
 import build.pluto.buildhttp.HTTPInput;
+import build.pluto.buildjava.JavaBulkBuilder;
+import build.pluto.buildjava.JavaInput;
+import build.pluto.buildjava.JavaJar;
 import build.pluto.buildmaven.MavenDependencyResolver;
 import build.pluto.buildmaven.input.MavenInput;
 import build.pluto.buildmonto.util.JavaUtil;
 import build.pluto.buildmonto.util.ManifestFileGenerator;
+import build.pluto.dependency.Origin;
 import build.pluto.dependency.RemoteRequirement;
 import build.pluto.output.None;
-import build.pluto.output.Out;
 
 public class ServicesJava extends Builder<ServicesJava.Input, None> {
 
@@ -34,12 +35,10 @@ public class ServicesJava extends Builder<ServicesJava.Input, None> {
 
 	    public final File targetDir;
 	    public final File jarLocation;
-	    public List<BuildRequest<?, ?, ?, ?>> requiredUnits;
 	    
-	    public Input(File targetDir, File jarLocation, List<BuildRequest<?, ?, ?, ?>> requiredUnits) {
+	    public Input(File targetDir, File jarLocation) {
 	        this.targetDir = targetDir;
 	        this.jarLocation = jarLocation;
-	        this.requiredUnits = requiredUnits;
 	    }
 	}
 
@@ -62,13 +61,16 @@ public class ServicesJava extends Builder<ServicesJava.Input, None> {
 
     @Override
     protected None build(Input input) throws Throwable {
+    	Origin.Builder requiredForJavac = new Origin.Builder();
+    	Origin.Builder requiredForJar = new Origin.Builder();
+    	
         //compile services-base-java and build jar
     	File servicesBaseJavaJar = new File("target/services-base-java.jar");
     	ServicesBaseJava.Input baseInput = new ServicesBaseJava.Input(
         		new File("target/services-base-java"),
-        		servicesBaseJavaJar,
-                null);
-        BuildRequest<?, ?, ?, ?> baseRequest = new BuildRequest<>(ServicesBaseJava.factory, baseInput);
+        		servicesBaseJavaJar);
+        requireBuild(ServicesBaseJava.factory, baseInput);
+        requiredForJavac.add(lastBuildReq());
 
         //resolve maven dependencies
         MavenInput mavenInput = 
@@ -78,9 +80,8 @@ public class ServicesJava extends Builder<ServicesJava.Input, None> {
         		.addDependency(MavenDependencies.COMMONS_CLI)
         		.build();
 
-        BuildRequest<?, Out<ArrayList<File>>, ?, ?> mavenRequest =
-            new BuildRequest<>(MavenDependencyResolver.factory, mavenInput);
-        ArrayList<File> classpath = this.requireBuild(mavenRequest).val();
+        List<File> mavenJars = requireBuild(MavenDependencyResolver.factory, mavenInput).val();
+        requiredForJavac.add(lastBuildReq());
 
         //get antlr-4.4-complete
         File antlrJar = new File(input.targetDir, "lib/antlr-4.4-complete.jar");
@@ -88,7 +89,8 @@ public class ServicesJava extends Builder<ServicesJava.Input, None> {
                  "http://www.antlr.org/download/antlr-4.4-complete.jar",
                  antlrJar,
                  RemoteRequirement.CHECK_NEVER);
-        BuildRequest<?, ?, ?, ?> httpRequest = new BuildRequest<>(HTTPDownloader.factory, httpInput);
+        requireBuild(HTTPDownloader.factory, httpInput);
+        requiredForJavac.add(lastBuildReq());
 
         //git sync source code of services-java
         File checkoutDir = new File(input.targetDir + "-src");
@@ -97,19 +99,20 @@ public class ServicesJava extends Builder<ServicesJava.Input, None> {
                 .setBound(new BranchBound(REPO_URL, "master"))
                 .setConsistencyCheckInterval(RemoteRequirement.CHECK_ALWAYS)
                 .build();
-        BuildRequest<?,?,?,?> gitRequest = new BuildRequest<>(GitRemoteSynchronizer.factory, gitInput);
-        requireBuild(gitRequest);
+        requireBuild(GitRemoteSynchronizer.factory, gitInput);
+        requiredForJavac.add(lastBuildReq());
         
         //compile src
+        List<File> classpath = new ArrayList<>(mavenJars);
         classpath.add(antlrJar);
         classpath.add(servicesBaseJavaJar);
-        List<BuildRequest<?, ?, ?, ?>> requiredUnits = Arrays.<BuildRequest<?, ?, ?, ?>>asList(baseRequest, mavenRequest, httpRequest, gitRequest);
-        BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
+        JavaInput javaInput = JavaUtil.compileJava(
                 checkoutDir,
                 input.targetDir,
                 classpath,
-                requiredUnits);
-        requireBuild(javaRequest);
+                requiredForJavac.get());
+        requireBuild(JavaBulkBuilder.factory, javaInput);
+        requiredForJar.add(lastBuildReq());
         
         //build jar
         File manifest = new File(input.targetDir, "manifest.mf");
@@ -121,15 +124,16 @@ public class ServicesJava extends Builder<ServicesJava.Input, None> {
                 "monto.service.java8.JavaServices",
                 classpath,
                 false);
-        BuildRequest<?,?,?,?> mfGeneratorReq = new BuildRequest<>(ManifestFileGenerator.factory, mfGeneratorInput);
+        requireBuild(ManifestFileGenerator.factory, mfGeneratorInput);
+        requiredForJar.add(lastBuildReq());
         
-        BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest, mfGeneratorReq };
-        BuildRequest<?, ?, ?, ?> jarRequest = JavaUtil.createJar(
+        JavaJar.Input jarInput = JavaUtil.createJar(
                 input.targetDir,
                 input.jarLocation,
                 manifest,
-                requiredUnitsForJar);
-        this.requireBuild(jarRequest);
+                requiredForJar.get());
+        requireBuild(JavaJar.factory, jarInput);
+        
         return None.val;
     }
 }

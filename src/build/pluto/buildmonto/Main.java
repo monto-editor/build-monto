@@ -14,13 +14,11 @@ public class Main {
 		
 		ServicesJava.Input javaInput = new ServicesJava.Input(
       		  new File ("target/services-java"),
-      		  new File ("target/services-java.jar"),
-      		  null);
+      		  new File ("target/services-java.jar"));
         
 		ServicesJavascript.Input jsInput = new ServicesJavascript.Input(
     		  new File ("target/services-javascript"),
-    		  new File ("target/services-javascript.jar"),
-    		  null);
+    		  new File ("target/services-javascript.jar"));
 		
 		BuildManagers.<None>buildAll(Arrays.asList(
 				new BuildRequest<>(ServicesJava.factory, javaInput), 

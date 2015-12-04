@@ -3,23 +3,24 @@ package build.pluto.buildmonto;
 import java.io.File;
 import java.io.Serializable;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 
-import build.pluto.builder.BuildRequest;
 import build.pluto.builder.Builder;
 import build.pluto.builder.BuilderFactory;
 import build.pluto.builder.BuilderFactoryFactory;
 import build.pluto.buildgit.GitInput;
 import build.pluto.buildgit.GitRemoteSynchronizer;
 import build.pluto.buildgit.bound.BranchBound;
+import build.pluto.buildjava.JavaBulkBuilder;
+import build.pluto.buildjava.JavaInput;
+import build.pluto.buildjava.JavaJar;
 import build.pluto.buildmaven.MavenDependencyResolver;
 import build.pluto.buildmaven.input.MavenInput;
 import build.pluto.buildmonto.util.JavaUtil;
 import build.pluto.buildmonto.util.ManifestFileGenerator;
+import build.pluto.dependency.Origin;
 import build.pluto.dependency.RemoteRequirement;
 import build.pluto.output.None;
-import build.pluto.output.Out;
 
 public class ServicesBaseJava extends Builder<ServicesBaseJava.Input, None> {
 	
@@ -31,15 +32,12 @@ public class ServicesBaseJava extends Builder<ServicesBaseJava.Input, None> {
 
         public final File target;
         public final File jarLocation;
-        public List<BuildRequest<?, ?, ?, ?>> requiredUnits;
 
         public Input(
                 File target,
-                File jarLocation,
-                List<BuildRequest<?, ?, ?, ?>> requiredUnits) {
+                File jarLocation) {
             this.target = target;
             this.jarLocation = jarLocation;
-            this.requiredUnits = requiredUnits;
         }
     }
     
@@ -63,14 +61,17 @@ public class ServicesBaseJava extends Builder<ServicesBaseJava.Input, None> {
     protected None build(Input input) throws Throwable {
     	File checkoutDir = new File(input.target + "-src");
     	
+    	Origin.Builder requiredForJavac = new Origin.Builder();
+    	Origin.Builder requiredForJar = new Origin.Builder();
+    	
         //get services-base-java src from git
         GitInput gitInput = 
         		new GitInput.Builder(checkoutDir, REPO_URL)
                 .setBound(new BranchBound(REPO_URL, "master"))
                 .setConsistencyCheckInterval(RemoteRequirement.CHECK_ALWAYS)
                 .build();
-        BuildRequest<?,?,?,?> gitRequest = new BuildRequest<>(GitRemoteSynchronizer.factory, gitInput);
-        requireBuild(gitRequest);
+        requireBuild(GitRemoteSynchronizer.factory, gitInput);
+        requiredForJavac.add(lastBuildReq());
 
         //resolve maven dependencies
         MavenInput mavenInput = 
@@ -78,23 +79,17 @@ public class ServicesBaseJava extends Builder<ServicesBaseJava.Input, None> {
         		.addDependency(MavenDependencies.JEROMQ)
         		.addDependency(MavenDependencies.JSON)
         		.build();
-
-        BuildRequest<?, Out<ArrayList<File>>, ?, ?> mavenRequest =
-            new BuildRequest<>(MavenDependencyResolver.factory, mavenInput);
-        ArrayList<File> classpath =  this.requireBuild(mavenRequest).val();
+        List<File> classpath = requireBuild(MavenDependencyResolver.factory, mavenInput).val();
+        requiredForJavac.add(lastBuildReq());
 
         //compile src
-        List<BuildRequest<?, ?, ?, ?>> requiredForJavac = new ArrayList<>();
-        requiredForJavac.add(gitRequest);
-        requiredForJavac.add(mavenRequest);
-        if(input.requiredUnits != null)
-            requiredForJavac.addAll(input.requiredUnits);
-        BuildRequest<?, ?, ?, ?> javaRequest = JavaUtil.compileJava(
+        JavaInput javaInput = JavaUtil.compileJava(
                 checkoutDir,
                 input.target,
                 classpath,
-                requiredForJavac);
-        requireBuild(javaRequest);
+                requiredForJavac.get());
+        requireBuild(JavaBulkBuilder.factory, javaInput);
+        requiredForJar.add(lastBuildReq());
 
         //build jar
         File manifest = new File(input.target, "manifest.mf");
@@ -106,15 +101,15 @@ public class ServicesBaseJava extends Builder<ServicesBaseJava.Input, None> {
                 null,
                 classpath,
                 false);
-        BuildRequest<?,?,?,?> mfGeneratorReq = new BuildRequest<>(ManifestFileGenerator.factory, mfGeneratorInput);
+        requiredForJar.add(ManifestFileGenerator.factory, mfGeneratorInput);
         
-        BuildRequest<?, ?, ?, ?>[] requiredUnitsForJar = { javaRequest, mfGeneratorReq };
-        BuildRequest<?, ?, ?, ?> jarRequest = JavaUtil.createJar(
+        JavaJar.Input jarInput = JavaUtil.createJar(
                 input.target,
                 input.jarLocation,
                 manifest,
-                requiredUnitsForJar);
-        this.requireBuild(jarRequest);
+                requiredForJar.get());
+        requireBuild(JavaJar.factory, jarInput);
+        
         return None.val;
     }
 }
