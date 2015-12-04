@@ -2,8 +2,6 @@ package build.pluto.buildmonto.util;
 
 import java.io.File;
 import java.io.FileFilter;
-import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -31,8 +29,7 @@ public class JavaUtil {
             List<BuildRequest<?,?,?,?>> requiredUnits) {
 
     	// TODO need to install file/directory requirement to get notified about added Java files.
-        List<Path> javaPaths = FileCommands.listFilesRecursive(src.toPath(), javaFileFilter);
-        List<File> javaFiles = convertPathToFileList(javaPaths);
+        List<File> javaFiles = FileCommands.listFilesRecursive(src, javaFileFilter);
         List<File> sourcePath = Arrays.asList(new File(src, "src"));
         
         if (javaFiles.isEmpty())
@@ -57,8 +54,8 @@ public class JavaUtil {
             File manifest,
             BuildRequest<?,?,?,?>[] requiredUnits) {
 
-        List<Path> classfilePaths = FileCommands.listFilesRecursive(target.toPath(), classFileFilter);
-        Set<File> classfileSet = new HashSet<>(convertPathToFileList(classfilePaths));
+    	List<File> classfilePaths = FileCommands.listFilesRecursive(target, classFileFilter);
+        Set<File> classfileSet = new HashSet<>(classfilePaths);
 
         if (classfileSet.isEmpty())
         	throw new IllegalStateException("Tried to create JAR file containing no class files");
@@ -70,13 +67,5 @@ public class JavaUtil {
                 Collections.singletonMap(target, classfileSet),
                 requiredUnits);
         return new BuildRequest<>(JavaJar.factory, jarInput);
-    }
-
-    private static List<File> convertPathToFileList(List<Path> pathList) {
-        List<File> fileList = new ArrayList<>(pathList.size());
-        for(Path p : pathList) {
-            fileList.add(p.toFile());
-        }
-        return fileList;
     }
 }
