@@ -25,7 +25,8 @@ public class JavaUtil {
             File src,
             File target,
             List<File> jarFiles,
-            Origin sourceOrigin) {
+            Origin sourceOrigin,
+            Origin classOrigin) {
 
     	// TODO need to install file/directory requirement to get notified about added Java files.
         List<File> javaFiles = FileCommands.listFilesRecursive(src, javaFileFilter);
@@ -42,7 +43,8 @@ public class JavaUtil {
         		.addClassPaths(jarFiles)
         		.setSourceRelease("1.8")
         		.setTargetRelease("1.8")
-        		.setFilesOrigin(sourceOrigin)
+        		.setSourceOrigin(sourceOrigin)
+        		.setClassOrigin(classOrigin)
         		.setCompiler(JavacCompiler.instance)
         		.get();
         

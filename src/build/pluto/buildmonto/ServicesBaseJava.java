@@ -61,7 +61,6 @@ public class ServicesBaseJava extends Builder<ServicesBaseJava.Input, None> {
     protected None build(Input input) throws Throwable {
     	File checkoutDir = new File(input.target + "-src");
     	
-    	Origin.Builder requiredForJavac = new Origin.Builder();
     	Origin.Builder requiredForJar = new Origin.Builder();
     	
         //get services-base-java src from git
@@ -71,7 +70,7 @@ public class ServicesBaseJava extends Builder<ServicesBaseJava.Input, None> {
                 .setConsistencyCheckInterval(RemoteRequirement.CHECK_ALWAYS)
                 .build();
         requireBuild(GitRemoteSynchronizer.factory, gitInput);
-        requiredForJavac.add(lastBuildReq());
+        Origin sourceOrigin = Origin.from(lastBuildReq());
 
         //resolve maven dependencies
         MavenInput mavenInput = 
@@ -80,14 +79,15 @@ public class ServicesBaseJava extends Builder<ServicesBaseJava.Input, None> {
         		.addDependency(MavenDependencies.JSON)
         		.build();
         List<File> classpath = requireBuild(MavenDependencyResolver.factory, mavenInput).val();
-        requiredForJavac.add(lastBuildReq());
+        Origin classOrigin = Origin.from(lastBuildReq());
 
         //compile src
         JavaInput javaInput = JavaUtil.compileJava(
                 checkoutDir,
                 input.target,
                 classpath,
-                requiredForJavac.get());
+                sourceOrigin,
+                classOrigin);
         requireBuild(JavaBulkBuilder.factory, javaInput);
         requiredForJar.add(lastBuildReq());
 

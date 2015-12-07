@@ -59,7 +59,7 @@ public class ServicesJavascript extends Builder<ServicesJavascript.Input, None> 
 
     @Override
     protected None build(Input input) throws Throwable {
-    	Origin.Builder requiredForJavac = new Origin.Builder();
+    	Origin.Builder classOrigin = new Origin.Builder();
     	Origin.Builder requiredForJar = new Origin.Builder();
     	
         //compile services-base-java
@@ -68,7 +68,7 @@ public class ServicesJavascript extends Builder<ServicesJavascript.Input, None> 
         		new File("target/services-base-java"),
         		servicesBaseJavaJar);
         requireBuild(ServicesBaseJava.factory, baseInput);
-        requiredForJavac.add(lastBuildReq());
+        classOrigin.add(lastBuildReq());
 
         //resolve maven dependencies
         MavenInput mavenInput = 
@@ -80,7 +80,7 @@ public class ServicesJavascript extends Builder<ServicesJavascript.Input, None> 
         		.build();
 
         List<File> mavenJars = requireBuild(MavenDependencyResolver.factory, mavenInput).val();
-        requiredForJavac.add(lastBuildReq());
+        classOrigin.add(lastBuildReq());
 
         //git sync source code of services-javascript
         File checkoutDir = new File(input.targetDir + "-src");
@@ -90,7 +90,7 @@ public class ServicesJavascript extends Builder<ServicesJavascript.Input, None> 
                 .setConsistencyCheckInterval(RemoteRequirement.CHECK_ALWAYS)
                 .build();
         requireBuild(GitRemoteSynchronizer.factory, gitInput);
-        requiredForJavac.add(lastBuildReq());
+        Origin sourceOrigin = Origin.from(lastBuildReq());
         
         //compile src
         List<File> classpath = new ArrayList<>(mavenJars);
@@ -99,7 +99,8 @@ public class ServicesJavascript extends Builder<ServicesJavascript.Input, None> 
                 checkoutDir,
                 input.targetDir,
                 classpath,
-                requiredForJavac.get());
+                sourceOrigin,
+                classOrigin.get());
         requireBuild(JavaBulkBuilder.factory, javaInput);
         requiredForJar.add(lastBuildReq());
 

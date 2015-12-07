@@ -61,7 +61,7 @@ public class ServicesJava extends Builder<ServicesJava.Input, None> {
 
     @Override
     protected None build(Input input) throws Throwable {
-    	Origin.Builder requiredForJavac = new Origin.Builder();
+    	Origin.Builder classOrigin = new Origin.Builder();
     	Origin.Builder requiredForJar = new Origin.Builder();
     	
         //compile services-base-java and build jar
@@ -70,7 +70,7 @@ public class ServicesJava extends Builder<ServicesJava.Input, None> {
         		new File("target/services-base-java"),
         		servicesBaseJavaJar);
         requireBuild(ServicesBaseJava.factory, baseInput);
-        requiredForJavac.add(lastBuildReq());
+        classOrigin.add(lastBuildReq());
 
         //resolve maven dependencies
         MavenInput mavenInput = 
@@ -81,7 +81,7 @@ public class ServicesJava extends Builder<ServicesJava.Input, None> {
         		.build();
 
         List<File> mavenJars = requireBuild(MavenDependencyResolver.factory, mavenInput).val();
-        requiredForJavac.add(lastBuildReq());
+        classOrigin.add(lastBuildReq());
 
         //get antlr-4.4-complete
         File antlrJar = new File(input.targetDir, "lib/antlr-4.4-complete.jar");
@@ -90,7 +90,7 @@ public class ServicesJava extends Builder<ServicesJava.Input, None> {
                  antlrJar,
                  RemoteRequirement.CHECK_NEVER);
         requireBuild(HTTPDownloader.factory, httpInput);
-        requiredForJavac.add(lastBuildReq());
+        classOrigin.add(lastBuildReq());
 
         //git sync source code of services-java
         File checkoutDir = new File(input.targetDir + "-src");
@@ -100,7 +100,7 @@ public class ServicesJava extends Builder<ServicesJava.Input, None> {
                 .setConsistencyCheckInterval(RemoteRequirement.CHECK_ALWAYS)
                 .build();
         requireBuild(GitRemoteSynchronizer.factory, gitInput);
-        requiredForJavac.add(lastBuildReq());
+        Origin sourceOrigin = Origin.from(lastBuildReq());
         
         //compile src
         List<File> classpath = new ArrayList<>(mavenJars);
@@ -110,7 +110,8 @@ public class ServicesJava extends Builder<ServicesJava.Input, None> {
                 checkoutDir,
                 input.targetDir,
                 classpath,
-                requiredForJavac.get());
+                sourceOrigin,
+                classOrigin.get());
         requireBuild(JavaBulkBuilder.factory, javaInput);
         requiredForJar.add(lastBuildReq());
         
