@@ -14,8 +14,8 @@ import build.pluto.buildgit.GitRemoteSynchronizer;
 import build.pluto.buildgit.bound.BranchBound;
 import build.pluto.buildhttp.HTTPDownloader;
 import build.pluto.buildhttp.HTTPInput;
-import build.pluto.buildjava.JavaBulkBuilder;
-import build.pluto.buildjava.JavaInput;
+import build.pluto.buildjava.JavaBulkCompiler;
+import build.pluto.buildjava.JavaCompilerInput;
 import build.pluto.buildjava.JavaJar;
 import build.pluto.buildmaven.MavenDependencyResolver;
 import build.pluto.buildmaven.input.MavenInput;
@@ -106,13 +106,13 @@ public class ServicesJava extends Builder<ServicesJava.Input, None> {
         List<File> classpath = new ArrayList<>(mavenJars);
         classpath.add(antlrJar);
         classpath.add(servicesBaseJavaJar);
-        JavaInput javaInput = JavaUtil.compileJava(
+        JavaCompilerInput javaInput = JavaUtil.compileJava(
                 checkoutDir,
                 input.targetDir,
                 classpath,
                 sourceOrigin,
                 classOrigin.get());
-        requireBuild(JavaBulkBuilder.factory, javaInput);
+        requireBuild(JavaBulkCompiler.factory, javaInput);
         requiredForJar.add(lastBuildReq());
         
         //build jar

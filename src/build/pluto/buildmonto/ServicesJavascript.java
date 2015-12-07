@@ -12,8 +12,8 @@ import build.pluto.builder.BuilderFactoryFactory;
 import build.pluto.buildgit.GitInput;
 import build.pluto.buildgit.GitRemoteSynchronizer;
 import build.pluto.buildgit.bound.BranchBound;
-import build.pluto.buildjava.JavaBulkBuilder;
-import build.pluto.buildjava.JavaInput;
+import build.pluto.buildjava.JavaBulkCompiler;
+import build.pluto.buildjava.JavaCompilerInput;
 import build.pluto.buildjava.JavaJar;
 import build.pluto.buildmaven.MavenDependencyResolver;
 import build.pluto.buildmaven.input.MavenInput;
@@ -95,13 +95,13 @@ public class ServicesJavascript extends Builder<ServicesJavascript.Input, None> 
         //compile src
         List<File> classpath = new ArrayList<>(mavenJars);
         classpath.add(servicesBaseJavaJar);
-        JavaInput javaInput = JavaUtil.compileJava(
+        JavaCompilerInput javaInput = JavaUtil.compileJava(
                 checkoutDir,
                 input.targetDir,
                 classpath,
                 sourceOrigin,
                 classOrigin.get());
-        requireBuild(JavaBulkBuilder.factory, javaInput);
+        requireBuild(JavaBulkCompiler.factory, javaInput);
         requiredForJar.add(lastBuildReq());
 
         //build jar
