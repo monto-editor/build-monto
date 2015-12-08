@@ -17,10 +17,10 @@ import build.pluto.buildhttp.HTTPInput;
 import build.pluto.buildjava.JavaBulkCompiler;
 import build.pluto.buildjava.JavaCompilerInput;
 import build.pluto.buildjava.JavaJar;
+import build.pluto.buildjava.JarManifestGenerator;
 import build.pluto.buildmaven.MavenDependencyResolver;
 import build.pluto.buildmaven.input.MavenInput;
 import build.pluto.buildmonto.util.JavaUtil;
-import build.pluto.buildmonto.util.ManifestFileGenerator;
 import build.pluto.dependency.Origin;
 import build.pluto.dependency.RemoteRequirement;
 import build.pluto.output.None;
@@ -118,14 +118,14 @@ public class ServicesJava extends Builder<ServicesJava.Input, None> {
         //build jar
         File manifest = new File(input.targetDir, "manifest.mf");
         File currentWorkingDir = Paths.get("").toFile();
-        ManifestFileGenerator.Input mfGeneratorInput = new ManifestFileGenerator.Input(
+        JarManifestGenerator.Input mfGeneratorInput = new JarManifestGenerator.Input(
                 currentWorkingDir,
                 manifest,
                 "1.0",
                 "monto.service.java8.JavaServices",
                 classpath,
                 false);
-        requireBuild(ManifestFileGenerator.factory, mfGeneratorInput);
+        requireBuild(JarManifestGenerator.factory, mfGeneratorInput);
         requiredForJar.add(lastBuildReq());
         
         JavaJar.Input jarInput = JavaUtil.createJar(
